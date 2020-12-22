@@ -16,7 +16,7 @@ This repository contains `tensorflow.keras` implementations of U-net and its var
 
 # Usage
 
-Juptyer notebooks are provided as [user guides](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb): 
+Juptyer notebooks are provided as [user guides](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
 
 # Overview
 
