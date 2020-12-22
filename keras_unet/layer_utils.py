@@ -162,7 +162,7 @@ def CONV_output(X, n_labels, kernel_size=1,
     return X
 
 def UNET_left(X, channel, kernel_size=3, 
-              activation='ReLU', 
+              stack_num=2, activation='ReLU', 
               pool=True, batch_norm=False, name='left0'):
     '''
     Encoder block of UNet (downsampling --> stacked Conv2D)
@@ -172,6 +172,7 @@ def UNET_left(X, channel, kernel_size=3,
         X: input tensor
         channel: number of convolution filters
         kernel_size: size of 2-d convolution kernels
+        stack_num: number of convolutional layers
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
         pool: True for maxpooling, False for strided convolutional layers
         batch_norm: True for batch normalization, False otherwise.
@@ -191,12 +192,12 @@ def UNET_left(X, channel, kernel_size=3,
         X = stride_conv(X, channel, pool_size, activation=activation, batch_norm=batch_norm, name=name)
     
     # stack linear convolutional layers
-    X = CONV_stack(X, channel, kernel_size, stack_num=2, activation=activation, batch_norm=batch_norm, name=name)
+    X = CONV_stack(X, channel, kernel_size, stack_num=stack_num, activation=activation, batch_norm=batch_norm, name=name)
     
     return X
 
 def UNET_right(X, X_left, channel, kernel_size=3, 
-               activation='ReLU',
+               stack_num=2, activation='ReLU',
                unpool=True, batch_norm=False, name='right0'):
     '''
     Decoder block of UNet (upsampling --> stacked Conv2D)
@@ -207,6 +208,7 @@ def UNET_right(X, X_left, channel, kernel_size=3,
         X_left: the output of corresponded downsampling output tensor (the input tensor is upsampling input)
         channel: number of convolution filters
         kernel_size: size of 2-d convolution kernels
+        stack_num: number of convolutional layers
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers
         batch_norm: True for batch normalization, False otherwise.
@@ -236,13 +238,13 @@ def UNET_right(X, X_left, channel, kernel_size=3,
     H = concatenate([X, X_left], axis=-1, name='{}_concat'.format(name))
     
     # stacked linear convolutional layers after concatenation
-    H = CONV_stack(H, channel, kernel_size, stack_num=2, activation=activation, 
+    H = CONV_stack(H, channel, kernel_size, stack_num=stack_num, activation=activation, 
                    batch_norm=batch_norm, name='{}_conv_after_concat'.format(name))
     
     return H
 
 def XNET_right(X, X_list, channel, kernel_size=3, 
-               activation='ReLU',
+               stack_num=2, activation='ReLU',
                unpool=True, batch_norm=False, name='right0'):
     '''
     Decoder block of Nest-UNet
@@ -253,6 +255,7 @@ def XNET_right(X, X_list, channel, kernel_size=3,
         X_list: a list of other tensors that connected to the input tensor
         channel: number of convolution filters
         kernel_size: size of 2-d convolution kernels
+        stack_num: number of convolutional layers
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers
         batch_norm: True for batch normalization, False otherwise.
@@ -282,11 +285,11 @@ def XNET_right(X, X_list, channel, kernel_size=3,
     X = concatenate([X,]+X_list, axis=3, name=name+'_concat')
     
     # Stacked convolutions after concatenation 
-    X = CONV_stack(X, channel, kernel_size, stack_num=2, activation=activation, name=name+'_conv_after_concat')
+    X = CONV_stack(X, channel, kernel_size, stack_num=stack_num, activation=activation, name=name+'_conv_after_concat')
     
     return X
 
-def UNET_att_right(X, X_left, channel, att_channel, kernel_size=3, 
+def UNET_att_right(X, X_left, channel, att_channel, kernel_size=3, stack_num=2,
                    activation='ReLU', atten_activation='ReLU', attention='add',
                    unpool=True, batch_norm=False, name='right0'):
     '''
@@ -298,7 +301,8 @@ def UNET_att_right(X, X_left, channel, att_channel, kernel_size=3,
         X_left: the output of corresponded downsampling output tensor (the input tensor is upsampling input)
         channel: number of convolution filters
         att_channel: number of intermediate channel.        
-        kernel_size: size of 2-d convolution kernels
+        kernel_size: size of 2-d convolution kernels.
+        stack_num: number of convolutional layers.
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
         atten_activation: a nonlinear attnetion activation.
                     The `sigma_1` in Oktay et al. 2018. Default is ReLU
@@ -332,7 +336,7 @@ def UNET_att_right(X, X_left, channel, att_channel, kernel_size=3,
     H = concatenate([X, X_left], axis=-1, name='{}_concat'.format(name))
     
     # stacked linear convolutional layers after concatenation
-    H = CONV_stack(H, channel, kernel_size, stack_num=2, activation=activation, 
+    H = CONV_stack(H, channel, kernel_size, stack_num=stack_num, activation=activation, 
                    batch_norm=batch_norm, name='{}_conv_after_concat'.format(name))
     
     return H

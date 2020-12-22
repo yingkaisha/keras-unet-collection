@@ -7,7 +7,8 @@ from tensorflow.keras.layers import BatchNormalization, Activation, concatenate,
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU
 from tensorflow.keras.models import Model
 
-def unet_2d(input_size, feature_list, n_labels, 
+def unet_2d(input_size, feature_list, n_labels,
+            stack_num_down=2, stack_num_up=2,
             activation='ReLU', output_activation='Softmax', 
             batch_norm=False, pool=True, unpool=True, name='unet'):
     '''
@@ -22,7 +23,9 @@ def unet_2d(input_size, feature_list, n_labels,
         feature_list: an iterable that defines the int number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(feature_list)`
-        n_labels: int number of output labels, must larger than 1
+        n_labels: int number of output labels.
+        stack_num_down: number of convolutional layers per downsampling level/block. 
+        stack_num_up: number of convolutional layers (after concatenation) per upsampling level/block.
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
         output_activation: one of the `tensorflow.keras.layers` interface. Default option is Softmax
                            if None is received, then linear activation is applied, that said, not activation.
@@ -42,17 +45,17 @@ def unet_2d(input_size, feature_list, n_labels,
     X_skip = []
     
     # downsampling blocks
-    X = CONV_stack(X, feature_list[0], stack_num=2, activation=activation, batch_norm=batch_norm, name='{}_down0'.format(name))
+    X = CONV_stack(X, feature_list[0], stack_num=stack_num_down, activation=activation, batch_norm=batch_norm, name='{}_down0'.format(name))
     X_skip.append(X)
     
     for i, f in enumerate(feature_list[1:]):
-        X = UNET_left(X, f, activation=activation, pool=pool, batch_norm=batch_norm, name='{}_down{}'.format(name, i+1))        
+        X = UNET_left(X, f, stack_num=stack_num_down, activation=activation, pool=pool, batch_norm=batch_norm, name='{}_down{}'.format(name, i+1))        
         X_skip.append(X)
     
     # upsampling blocks
     X_skip = X_skip[:-1][::-1]
     for i, f in enumerate(feature_list[:-1][::-1]):
-        X = UNET_right(X, X_skip[i], f, activation=activation, 
+        X = UNET_right(X, X_skip[i], f, stack_num=stack_num_up, activation=activation, 
                        unpool=unpool, batch_norm=batch_norm, name='{}_up{}'.format(name, i+1))
 
     OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
@@ -60,9 +63,10 @@ def unet_2d(input_size, feature_list, n_labels,
     
     return model    
 
-def unet_plus_2d(input_size, feature_list, n_labels, 
-         activation='ReLU', output_activation='Softmax', 
-         batch_norm=False, pool=True, unpool=True, name='xnet'):
+def unet_plus_2d(input_size, feature_list, n_labels,
+                 stack_num_down=2, stack_num_up=2,
+                 activation='ReLU', output_activation='Softmax', 
+                 batch_norm=False, pool=True, unpool=True, name='xnet'):
     '''
     U-net++ or nested U-net 
     ----------
@@ -75,7 +79,9 @@ def unet_plus_2d(input_size, feature_list, n_labels,
         feature_list: an iterable that defines the int number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(feature_list)`
-        n_labels: int number of output labels, must larger than 1
+        n_labels: int number of output labels.
+        stack_num_down: number of convolutional layers per downsampling level/block. 
+        stack_num_up: number of convolutional layers (after concatenation) per upsampling level/block.
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
         output_activation: one of the `tensorflow.keras.layers` interface. Default option is Softmax
                            if None is received, then linear activation is applied, that said, not activation.
@@ -98,10 +104,12 @@ def unet_plus_2d(input_size, feature_list, n_labels,
     X_nest_skip = [[] for _ in range(depth_)] 
     
     # downsampling blocks (same as in 'unet_2d')
-    X = CONV_stack(X, feature_list[0], stack_num=2, activation=activation, batch_norm=batch_norm, name='{}_down0'.format(name))
+    X = CONV_stack(X, feature_list[0], stack_num=stack_num_down, activation=activation, 
+                   batch_norm=batch_norm, name='{}_down0'.format(name))
     X_nest_skip[0].append(X)
     for i, f in enumerate(feature_list[1:]):
-        X = UNET_left(X, f, activation=activation, pool=pool, batch_norm=batch_norm, name='{}_down{}'.format(name, i+1))        
+        X = UNET_left(X, f, stack_num=stack_num_down, activation=activation, 
+                      pool=pool, batch_norm=batch_norm, name='{}_down{}'.format(name, i+1))        
         X_nest_skip[0].append(X)
     
     for nest_lev in range(1, depth_):
@@ -119,7 +127,8 @@ def unet_plus_2d(input_size, feature_list, n_labels,
                 
             # upsamping block that concatenates all available (same feature map size) down-/upsampling outputs
             X_nest_skip[nest_lev].append(
-                XNET_right(X_nest_skip[nest_lev-1][i+1], previous_skip, feature_list[i], activation=activation, name='xnet_{}{}'.format(nest_lev, i)))
+                XNET_right(X_nest_skip[nest_lev-1][i+1], previous_skip, feature_list[i], 
+                           stack_num=stack_num_up, activation=activation, name='xnet_{}{}'.format(nest_lev, i)))
             
     # output
     OUT = CONV_output(X_nest_skip[-1][-1], n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
@@ -129,9 +138,10 @@ def unet_plus_2d(input_size, feature_list, n_labels,
     
     return model
 
-def att_unet_2d(input_size, feature_list, n_labels, 
-             activation='ReLU', atten_activation='ReLU', attention='add', output_activation='Softmax', 
-             batch_norm=False, pool=True, unpool=True, name='att-unet'):
+def att_unet_2d(input_size, feature_list, n_labels,
+                stack_num_down=2, stack_num_up=2,
+                activation='ReLU', atten_activation='ReLU', attention='add', output_activation='Softmax', 
+                batch_norm=False, pool=True, unpool=True, name='att-unet'):
     '''
     Attention-U-net 
     ----------
@@ -144,7 +154,9 @@ def att_unet_2d(input_size, feature_list, n_labels,
         feature_list: an iterable that defines the int number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(feature_list)`
-        n_labels: int number of output labels, must larger than 1
+        n_labels: int number of output labels.
+        stack_num_down: number of convolutional layers per downsampling level/block. 
+        stack_num_up: number of convolutional layers (after concatenation) per upsampling level/block.
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
         atten_activation: a nonlinear attnetion activation.
                     The `sigma_1` in Oktay et al. 2018. Default is ReLU
@@ -170,17 +182,18 @@ def att_unet_2d(input_size, feature_list, n_labels,
     X_skip = []
     
     # downsampling blocks
-    X = CONV_stack(X, feature_list[0], stack_num=2, activation=activation, batch_norm=batch_norm, name='{}_down0'.format(name))
+    X = CONV_stack(X, feature_list[0], stack_num=stack_num_down, activation=activation, batch_norm=batch_norm, name='{}_down0'.format(name))
     X_skip.append(X)
     
     for i, f in enumerate(feature_list[1:]):
-        X = UNET_left(X, f, activation=activation, pool=pool, batch_norm=batch_norm, name='{}_down{}'.format(name, i+1))        
+        X = UNET_left(X, f, stack_num=stack_num_down, activation=activation, pool=pool, 
+                      batch_norm=batch_norm, name='{}_down{}'.format(name, i+1))        
         X_skip.append(X)
         
     # upsampling blocks
     X_skip = X_skip[:-1][::-1]
     for i, f in enumerate(feature_list[:-1][::-1]):
-        X = UNET_att_right(X, X_skip[i], f, att_channel=f//2, 
+        X = UNET_att_right(X, X_skip[i], f, att_channel=f//2, stack_num=stack_num_up,
                            activation=activation, atten_activation=atten_activation, attention=attention,
                            unpool=unpool, batch_norm=batch_norm, name='{}_up{}'.format(name, i+1))
 
