@@ -30,3 +30,6 @@ U-net and many of its variants take three-dimensional tensors as inputs and prod
 
 Yingkai (Kyle) Sha <yingkai@eoas.ubc.ca>
 
+# License
+
+[MIT License](https://github.com/yingkaisha/keras-unet/blob/main/LICENSE)
