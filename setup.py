@@ -4,7 +4,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name = "example-pkg-yingkaisha", # Replace with your own username
+    name = "keras-unet-collection",
     version = "0.0.1",
     author = "Yingkai (Kyle) Sha",
     author_email = "yingkaisha@gmail.com",
