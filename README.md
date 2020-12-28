@@ -1,4 +1,4 @@
-# keras-unet
+# keras-unet-collection
 
 This repository contains `tensorflow.keras` implementations of U-net, U-net++, Residual U-net, Attention U-net. Details of these models are listed as follows:
 

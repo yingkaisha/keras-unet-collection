@@ -1,6 +1,6 @@
 
 from __future__ import absolute_import
-from keras_unet.layer_utils import *
+from keras_unet_collection.layer_utils import *
 
 from tensorflow.keras.layers import Input, Conv2D
 from tensorflow.keras.layers import BatchNormalization, Activation, concatenate, multiply
@@ -12,7 +12,13 @@ def unet_2d(input_size, filter_num, n_labels,
             activation='ReLU', output_activation='Softmax', 
             batch_norm=False, pool=True, unpool=True, name='unet'):
     '''
-    U-net 
+    U-net
+    
+    unet_2d(input_size, filter_num, n_labels,
+            stack_num_down=2, stack_num_up=2,
+            activation='ReLU', output_activation='Softmax', 
+            batch_norm=False, pool=True, unpool=True, name='unet')
+    
     ----------
     Ronneberger, O., Fischer, P. and Brox, T., 2015, October. U-net: Convolutional networks for biomedical image segmentation. 
     In International Conference on Medical image computing and computer-assisted intervention (pp. 234-241). Springer, Cham.
@@ -69,7 +75,13 @@ def att_unet_2d(input_size, filter_num, n_labels,
                 activation='ReLU', atten_activation='ReLU', attention='add', output_activation='Softmax', 
                 batch_norm=False, pool=True, unpool=True, name='att-unet'):
     '''
-    Attention-U-net 
+    Attention-U-net
+    
+    att_unet_2d(input_size, filter_num, n_labels,
+                stack_num_down=2, stack_num_up=2,
+                activation='ReLU', atten_activation='ReLU', attention='add', output_activation='Softmax', 
+                batch_norm=False, pool=True, unpool=True, name='att-unet')
+                
     ----------
     Oktay, O., Schlemper, J., Folgoc, L.L., Lee, M., Heinrich, M., Misawa, K., Mori, K., McDonagh, S., Hammerla, N.Y., Kainz, B. 
     and Glocker, B., 2018. Attention u-net: Learning where to look for the pancreas. arXiv preprint arXiv:1804.03999.
@@ -133,7 +145,13 @@ def unet_plus_2d(input_size, filter_num, n_labels,
                  activation='ReLU', output_activation='Softmax', 
                  batch_norm=False, pool=True, unpool=True, name='xnet'):
     '''
-    U-net++ or nested U-net 
+    U-net++ or nested U-net
+    
+    unet_plus_2d(input_size, filter_num, n_labels,
+                 stack_num_down=2, stack_num_up=2,
+                 activation='ReLU', output_activation='Softmax', 
+                 batch_norm=False, pool=True, unpool=True, name='xnet')
+    
     ----------
     Zhou, Z., Siddiquee, M.M.R., Tajbakhsh, N. and Liang, J., 2018. Unet++: A nested u-net architecture for medical image segmentation. 
     In Deep Learning in Medical Image Analysis and Multimodal Learning for Clinical Decision Support (pp. 3-11). Springer, Cham.
@@ -209,7 +227,13 @@ def res_unet_2d(input_size, filter_num, n_labels,
                batch_norm=False, pool=True, unpool=True, name='res_unet'):
     
     '''
-    U-net with residual blocks. A modified version of R2U-net 
+    U-net with residual blocks. A modified version of R2U-net
+    
+    res_unet_2d(input_size, filter_num, n_labels, 
+               stack_num=2, res_num=2,
+               activation='ReLU', output_activation='Softmax', 
+               batch_norm=False, pool=True, unpool=True, name='res_unet')
+    
     ----------
     Alom, M.Z., Hasan, M., Yakopcic, C., Taha, T.M. and Asari, V.K., 2018. Recurrent residual convolutional neural network 
     based on u-net (r2u-net) for medical image segmentation. arXiv preprint arXiv:1802.06955.
@@ -272,6 +296,11 @@ def res_unet_plus_2d(input_size, filter_num, n_labels,
                      batch_norm=False, pool=True, unpool=True, name='res_xnet'):
     '''
     U-net++ with residual blocks. 
+    
+    res_unet_plus_2d(input_size, filter_num, n_labels,
+                     stack_num=2, res_num=2,
+                     activation='ReLU', output_activation='Softmax', 
+                     batch_norm=False, pool=True, unpool=True, name='res_xnet')
     
     Input
     ----------
