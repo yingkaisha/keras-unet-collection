@@ -1,7 +1,7 @@
 *.png
 
 # author's testing scripts
-*test*
+*TEST*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

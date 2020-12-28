@@ -26,19 +26,19 @@ def unet_2d(input_size, filter_num, n_labels,
     Input
     ----------
         input_size: a tuple that defines the shape of input, e.g., (None, None, 3)
-        filter_num: an iterable that defines the int number of filters for each \
+        filter_num: an iterable that defines number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(filter_num)`
-        n_labels: int number of output labels.
+        n_labels: number of output labels.
         stack_num_down: number of convolutional layers per downsampling level/block. 
         stack_num_up: number of convolutional layers (after concatenation) per upsampling level/block.
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
         output_activation: one of the `tensorflow.keras.layers` interface. Default option is Softmax
-                           if None is received, then linear activation is applied, that said, not activation.
-        batch_norm: True for batch normalization, False otherwise.
+                           if None is received, then linear activation is applied.
+        batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
-        name: name of the created keras layers
+        name: perfix of the created keras layers
     Output
     ----------
         X: a keras model 
@@ -66,7 +66,7 @@ def unet_2d(input_size, filter_num, n_labels,
                        unpool=unpool, batch_norm=batch_norm, name='{}_up{}'.format(name, i+1))
 
     OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
-    model = Model(inputs=[IN], outputs=[OUT])
+    model = Model(inputs=[IN], outputs=[OUT], name='{}_model'.format(name))
     
     return model    
 
@@ -89,10 +89,10 @@ def att_unet_2d(input_size, filter_num, n_labels,
     Input
     ----------
         input_size: a tuple that defines the shape of input, e.g., (None, None, 3)
-        filter_num: an iterable that defines the int number of filters for each \
+        filter_num: an iterable that defines number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(filter_num)`
-        n_labels: int number of output labels.
+        n_labels: number of output labels.
         stack_num_down: number of convolutional layers per downsampling level/block. 
         stack_num_up: number of convolutional layers (after concatenation) per upsampling level/block.
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
@@ -101,11 +101,11 @@ def att_unet_2d(input_size, filter_num, n_labels,
         attention: 'add' for additive attention. 'multiply' for multiplicative attention.
                    Oktay et al. 2018 applied additive attention.
         output_activation: one of the `tensorflow.keras.layers` interface. Default option is Softmax
-                           if None is received, then linear activation is applied, that said, not activation.
-        batch_norm: True for batch normalization, False otherwise.
+                           if None is received, then linear activation is applied.
+        batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
-        name: name of the created keras layers
+        name: perfix of the created keras layers
     Output
     ----------
         X: a keras model 
@@ -136,7 +136,7 @@ def att_unet_2d(input_size, filter_num, n_labels,
                            unpool=unpool, batch_norm=batch_norm, name='{}_up{}'.format(name, i+1))
 
     OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
-    model = Model(inputs=[IN], outputs=[OUT])
+    model = Model(inputs=[IN], outputs=[OUT], name='{}_model'.format(name))
     
     return model
 
@@ -159,19 +159,19 @@ def unet_plus_2d(input_size, filter_num, n_labels,
     Input
     ----------
         input_size: a tuple that defines the shape of input, e.g., (None, None, 3)
-        filter_num: an iterable that defines the int number of filters for each \
+        filter_num: an iterable that defines number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(filter_num)`
-        n_labels: int number of output labels.
+        n_labels: number of output labels.
         stack_num_down: number of convolutional layers per downsampling level/block. 
         stack_num_up: number of convolutional layers (after concatenation) per upsampling level/block.
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
         output_activation: one of the `tensorflow.keras.layers` interface. Default option is Softmax
-                           if None is received, then linear activation is applied, that said, not activation.
-        batch_norm: True for batch normalization, False otherwise.
+                           if None is received, then linear activation is applied.
+        batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
-        name: name of the created keras layers
+        name: perfix of the created keras layers
     Output
     ----------
         X: a keras model 
@@ -217,7 +217,7 @@ def unet_plus_2d(input_size, filter_num, n_labels,
     OUT = CONV_output(X_nest_skip[-1][-1], n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
     
     # model
-    model = Model(inputs=[IN], outputs=[OUT])
+    model = Model(inputs=[IN], outputs=[OUT], name='{}_model'.format(name))
     
     return model
 
@@ -241,21 +241,21 @@ def res_unet_2d(input_size, filter_num, n_labels,
     Input
     ----------
         input_size: a tuple that defines the shape of input, e.g., (None, None, 3)
-        filter_num: an iterable that defines the int number of filters for each \
+        filter_num: an iterable that defines number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(filter_num)`
-        n_labels: int number of output labels.
+        n_labels: number of output labels.
         
         stack_num: number of stacked residual blocks (effective for both down- and upsampling blocks)
         res_num: number of convolutional layers per residual path (effective for both down- and upsampling blocks)
         
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
         output_activation: one of the `tensorflow.keras.layers` interface. Default option is Softmax
-                           if None is received, then linear activation is applied, that said, not activation.
-        batch_norm: True for batch normalization, False otherwise.
+                           if None is received, then linear activation is applied.
+        batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
-        name: name of the created keras layers
+        name: perfix of the created keras layers
         
     Output
     ----------
@@ -286,7 +286,7 @@ def res_unet_2d(input_size, filter_num, n_labels,
                            activation='ReLU', unpool=unpool, batch_norm=batch_norm, name='{}_up{}'.format(name, i+1))
 
     OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
-    model = Model(inputs=[IN], outputs=[OUT])
+    model = Model(inputs=[IN], outputs=[OUT], name='{}_model'.format(name))
     
     return model 
 
@@ -305,21 +305,21 @@ def res_unet_plus_2d(input_size, filter_num, n_labels,
     Input
     ----------
         input_size: a tuple that defines the shape of input, e.g., (None, None, 3)
-        filter_num: an iterable that defines the int number of filters for each \
+        filter_num: an iterable that defines number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(filter_num)`
-        n_labels: int number of output labels.
+        n_labels: number of output labels.
         
         stack_num: number of stacked residual blocks (effective for both down- and upsampling blocks)
         res_num: number of convolutional layers per residual path (effective for both down- and upsampling blocks)
         
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
         output_activation: one of the `tensorflow.keras.layers` interface. Default option is Softmax
-                           if None is received, then linear activation is applied, that said, not activation.
-        batch_norm: True for batch normalization, False otherwise.
+                           if None is received, then linear activation is applied.
+        batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
-        name: name of the created keras layers
+        name: perfix of the created keras layers
         
     Output
     ----------
@@ -367,6 +367,6 @@ def res_unet_plus_2d(input_size, filter_num, n_labels,
     OUT = CONV_output(X_nest_skip[-1][-1], n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
     
     # model
-    model = Model(inputs=[IN], outputs=[OUT])
+    model = Model(inputs=[IN], outputs=[OUT], name='{}_model'.format(name))
     
     return model
