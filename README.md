@@ -16,7 +16,7 @@ This repository contains `tensorflow.keras` implementations of U-net, U-net++, R
 
 * Keras 2.4.0
 
-# Installation
+# Installation and usage
 
 ```pip install keras-unet-collection```
 
@@ -25,9 +25,7 @@ from keras_unet_collection import models
 # e.g. models.unet_2d(...)
 ```
 
-# Usage
-
-Juptyer notebooks are provided as [user guides](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
+* Juptyer notebooks are provided as [user guides](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
 
 # Overview
 
