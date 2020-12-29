@@ -25,7 +25,7 @@ from keras_unet_collection import models
 # e.g. models.unet_2d(...)
 ```
 
-* Juptyer notebooks are provided as [user guides](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
+* Jupyter notebooks are provided as [user guides](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
 
 # Overview
 
