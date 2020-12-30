@@ -91,20 +91,19 @@ def crps2d_np(y_true, y_pred, factor=0.05):
         
     return crps_out/batch_num
 
-def euclidean_distance(x, y):
-    """
-    Computes the Euclidean_distance between two tensorflow variables
-    """
-    d = tf.math.reduce_mean(tf.square(tf.subtract(x, y)), axis=-1)
-    return d
-
-def triplet(y_true, y_pred, N, margin=5.0):
+def triplet1d(y_true, y_pred, N, margin=5.0):
     
     '''
-    Semi-hard triplet loss with anchor, positive, and negative samples.
+    Semi-hard triplet loss with one-dimensional vectors of anchor, positive, and negative.
     
-    ... in coming ...
-    
+    Input
+    ----------
+        y_true: a dummy input, not used within this function. Appear as a requirment of keras loss function format.
+        y_pred: a single pass of triplet training, with shape=(batch_num, 3*embeded_vector_size)
+                anchor, positive, and negative embeddings are expected to concatenate together.
+        N: Size (dimensions) of embedded vectors
+        margin: a positive number that prevents negative loss.
+        
     '''
     
     Embd_anchor = y_pred[:, 0:N]
