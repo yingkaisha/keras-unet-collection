@@ -27,6 +27,10 @@ from keras_unet_collection import models
 
 * Jupyter notebooks are provided as [user guides](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
 
+| Versions | Release date  | Updates  |
+|:--------:|:-------------:|:-------- |
+| 0.0.2    | 2020-12-30    | (1) CRPS loss function.<br />(2) Semi-hard triplet loss function.<br />(3) Fixing user specified names on keras models. |
+
 # Overview
 
 U-net is a convolutional neural network with encoder-decoder architecture and skip-connections, loosely defined under the concept of "fully convolutional networks." U-net was originally proposed for the semantic segmentation of medical images and is modified for solving a wider range of gridded learning problems.
