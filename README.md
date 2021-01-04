@@ -8,7 +8,7 @@ This repository contains `tensorflow.keras` implementations of U-net, U-net++, R
 | U-net++/Unet++  | [Zhou et al. (2018)](https://link.springer.com/chapter/10.1007/978-3-030-00889-5_1) |
 | R2U-Net         | [Alom et al. (2018)](https://arxiv.org/abs/1802.06955) |
 | Attention U-net | [Oktay et al. (2018)](https://arxiv.org/abs/1804.03999) |
-| ResUnet-a       | [Diakogiannis et al. (2020)](https://www.sciencedirect.com/science/article/pii/S0924271620300149?casa_token=NEyVYTeBykMAAAAA:sDSnOwMCM2Q7iucSrKQrefUxr4LFNWHnMSXlSDqaoq8NTbsrqruNUAS6_WxhXnWOOWj0FRoKRA) |
+| ResUnet-a       | [Diakogiannis et al. (2020)](https://doi.org/10.1016/j.isprsjprs.2020.01.013) |
 
 These models are implemented with user friendly key words, including optional network depth, hidden layer activations and batch normalization. Examples refers to the [user guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
 
@@ -31,6 +31,8 @@ Additional activation layers and loss functions are also provided:
 
 * Keras 2.4.0
 
+* Numpy 1.18.2
+
 # Installation and usage
 
 ```pip install keras-unet-collection```
@@ -42,10 +44,7 @@ from keras_unet_collection import models
 
 * Jupyter notebooks are provided as [user guides](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
 
-| Version  | Release date  | Update  |
-|:--------:|:-------------:|:-------- |
-| 0.0.2    | 2020-12-30    | (1) CRPS loss function.<br />(2) Semi-hard triplet loss function.<br />(3) Fixing user specified names on keras models. |
-| 0.0.3    | 2020-01-01    | (1) Bug fix.<br />(2) keyword and documentation fixes for R2U-Net. |
+* [Changlog](https://github.com/yingkaisha/keras-unet-collection/blob/main/CHANGELOG.md)
 
 # Overview
 
