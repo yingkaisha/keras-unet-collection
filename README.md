@@ -1,5 +1,8 @@
 # keras-unet-collection
 
+[![PyPI license](https://img.shields.io/pypi/l/keras-unet-collection.svg)](https://pypi.org/project/keras-unet-collection/)
+[![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity)
+
 This repository contains `tensorflow.keras` implementations of U-net, U-net++, R2U-net, Attention U-net, ResUnet-a:
 
 | `keras_unet_collection.models`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Reference |
@@ -10,7 +13,7 @@ This repository contains `tensorflow.keras` implementations of U-net, U-net++, R
 | Attention U-net | [Oktay et al. (2018)](https://arxiv.org/abs/1804.03999) |
 | ResUnet-a       | [Diakogiannis et al. (2020)](https://doi.org/10.1016/j.isprsjprs.2020.01.013) |
 
-These models are implemented with user friendly key words, including optional network depth, hidden layer activations and batch normalization. Examples refers to the [user guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
+These models are implemented with user friendly keywords, including optional network depth, hidden layer activations and batch normalization. Example refers to the [user guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
 
 Additional activation layers and loss functions are also provided:
 
