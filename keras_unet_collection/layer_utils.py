@@ -1,7 +1,11 @@
 
 from __future__ import absolute_import
 
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Conv2DTranspose
+from keras_unet_collection.activations import GELU, Snake
+from tensorflow import shape as tf_shape
+from tensorflow import expand_dims
+from tensorflow.compat.v1 import image
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Conv2DTranspose, GlobalAveragePooling2D, DepthwiseConv2D, Lambda
 from tensorflow.keras.layers import BatchNormalization, Activation, concatenate, multiply, add
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU, Softmax
 
@@ -26,7 +30,7 @@ def stride_conv(X, channel, pool_size=2,
         X: output tensor
     '''
     
-    bias_flag = ~batch_norm
+    bias_flag = not batch_norm
     
     # linear convolution with strides
     X = Conv2D(channel, pool_size, strides=(pool_size, pool_size), 
@@ -94,7 +98,7 @@ def attention_gate(X, g, channel,
     return X_att
 
 def CONV_stack(X, channel, kernel_size=3, stack_num=2, 
-               activation='ReLU', 
+               dilation_rate=1, activation='ReLU', 
                batch_norm=False, name='conv_stack'):
     '''
     Stacked convolutional layer:
@@ -106,8 +110,8 @@ def CONV_stack(X, channel, kernel_size=3, stack_num=2,
         X: input tensor
         channel: number of convolution filters
         kernel_size: size of 2-d convolution kernels
-        
         stack_num: number of stacked Conv2D-BN-Activation layers
+        dilation_rate: option of dilated convolution kernel 
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
         batch_norm: True for batch normalization, False otherwise.
         name: name of the created keras layers
@@ -117,7 +121,7 @@ def CONV_stack(X, channel, kernel_size=3, stack_num=2,
         
     '''
     
-    bias_flag = ~batch_norm
+    bias_flag = not batch_norm
     
     # stacking Convolutional layers
     for i in range(stack_num):
@@ -125,7 +129,8 @@ def CONV_stack(X, channel, kernel_size=3, stack_num=2,
         activation_func = eval(activation)
         
         # linear convolution
-        X = Conv2D(channel, kernel_size, padding='same', use_bias=bias_flag, name='{}_{}'.format(name, i))(X)
+        X = Conv2D(channel, kernel_size, padding='same', use_bias=bias_flag, 
+                   dilation_rate=dilation_rate, name='{}_{}'.format(name, i))(X)
         
         # batch normalization
         if batch_norm:
@@ -188,6 +193,144 @@ def RR_CONV(X, channel, kernel_size=3, stack_num=2, recur_num=2, activation='ReL
     out_layer = add([layer_main, layer_skip], name='{}_add{}'.format(name, i))
     
     return out_layer
+
+def ResUNET_a_block(X, channel, kernel_size=3, dilation_num=1.0, activation='ReLU', batch_norm=False, name='res_a_block'):
+    '''
+    ResUNET_a_block
+    
+    ----------
+    Diakogiannis, F.I., Waldner, F., Caccetta, P. and Wu, C., 2020. Resunet-a: a deep learning framework for 
+    semantic segmentation of remotely sensed data. ISPRS Journal of Photogrammetry and Remote Sensing, 162, pp.94-114.
+    
+    Input
+    ----------
+        X: input tensor
+        channel: number of convolution filters
+        kernel_size: size of 2-d convolution kernels
+        dilation_num: an iterable that defines dilation rates of convolutional layers
+                      stacks of conv2d is expected as `len(dilation_num)`.
+        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+        batch_norm: True for batch normalization, False otherwise.
+        name: name of the created keras layers
+    Output
+    ----------
+        X: output tensor
+    
+    '''
+    
+    X_res = []
+    
+    for i, d in enumerate(dilation_num):
+        
+        X_res.append(CONV_stack(X, channel, kernel_size=kernel_size, stack_num=2, dilation_rate=d, 
+                                activation=activation, batch_norm=batch_norm, name='{}_stack{}'.format(name, i)))
+        
+    if len(X_res) > 1:
+        return add(X_res)
+    
+    else:
+        return X_res[0]
+
+
+def Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, dilation_rate=1, activation='ReLU', batch_norm=False, name='sep_conv'):
+    '''
+    Depthwise separable convolution with 
+    (optional) dilated convolution kernel and batch normalization.
+    
+    Input
+    ----------
+        X: input tensor
+        channel: number of convolution filters
+        kernel_size: size of 2-d convolution kernels
+        stack_num: number of stacked depthwise-pointwise layers
+        dilation_rate: option of dilated convolution kernel 
+        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+        batch_norm: True for batch normalization, False otherwise.
+        name: name of the created keras layers
+    Output
+    ----------
+        X: output tensor
+    
+    '''
+    
+    activation_func = eval(activation)
+    bias_flag = not batch_norm
+    
+    for i in range(stack_num):
+        X = DepthwiseConv2D(kernel_size, dilation_rate=dilation_rate, padding='same', 
+                            use_bias=bias_flag, name='{}_{}_depthwise'.format(name, i))(X)
+        
+        if batch_norm:
+            X = BatchNormalization(name='{}_{}_depthwise_BN'.format(name, i))(X)
+
+        X = activation_func(name='{}_{}_depthwise_activation'.format(name, i))(X)
+
+        X = Conv2D(channel, (1, 1), padding='same', use_bias=bias_flag, name='{}_{}_pointwise'.format(name, i))(X)
+        
+        if batch_norm:
+            X = BatchNormalization(name='{}_{}_pointwise_BN'.format(name, i))(X)
+
+        X = activation_func(name='{}_{}_pointwise_activation'.format(name, i))(X)
+    
+    return X
+
+def ASPP_conv(X, channel, activation='ReLU', batch_norm=True, name='aspp'):
+    '''
+    Atrous Spatial Pyramid Pooling (ASPP)
+    
+    ----------
+    Wang, Y., Liang, B., Ding, M. and Li, J., 2019. Dense semantic labeling 
+    with atrous spatial pyramid pooling and decoder for high-resolution remote 
+    sensing imagery. Remote Sensing, 11(1), p.20.
+    
+    Input
+    ----------
+        X: input tensor
+        channel: number of convolution filters 
+        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+        batch_norm: True for batch normalization, False otherwise.
+        name: name of the created keras layers
+    Output
+    ----------
+        X: output tensor
+        
+    *dilation rates are assigned as 6, 9, 12.
+    '''
+    
+    activation_func = eval(activation)
+    bias_flag = not batch_norm
+    
+    shape_before = tf_shape(X)
+    
+    b4 = GlobalAveragePooling2D(name='{}_avepool_b4'.format(name))(X)
+    
+    b4 = expand_dims(expand_dims(b4, 1), 1, name='{}_expdim_b4'.format(name))
+    
+    b4 = Conv2D(channel, 1, padding='same', use_bias=bias_flag, name='{}_conv_b4'.format(name))(b4)
+    
+    if batch_norm:
+        b4 = BatchNormalization(name='{}_conv_b4_BN'.format(name))(b4)
+        
+    b4 = activation_func(name='{}_conv_b4_activation'.format(name))(b4)
+    
+    b4 = Lambda(lambda X: image.resize(X, shape_before[1:3], method='bilinear', align_corners=True), 
+                name='{}_resize_b4'.format(name))(b4)
+    
+    b0 = Conv2D(channel, (1, 1), padding='same', use_bias=bias_flag, name='{}_conv_b0'.format(name))(X)
+    
+    if batch_norm:
+        b0 = BatchNormalization(name='{}_conv_b0_BN'.format(name))(b0)
+        
+    b0 = activation_func(name='{}_conv_b0_activation'.format(name))(b0)
+
+    b_r6 = Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, activation='ReLU', 
+                        dilation_rate=6, batch_norm=True, name='{}_sepconv_r6'.format(name))
+    b_r9 = Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, activation='ReLU', 
+                        dilation_rate=9, batch_norm=True, name='{}_sepconv_r9'.format(name))
+    b_r12 = Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, activation='ReLU', 
+                        dilation_rate=12, batch_norm=True, name='{}_sepconv_r12'.format(name))
+    
+    return concatenate([b4, b0, b_r6, b_r9, b_r12])
 
 def CONV_output(X, n_labels, kernel_size=1, 
                 activation='Softmax', 
@@ -388,7 +531,6 @@ def UNET_RR_right(X, X_list, channel, kernel_size=3,
     
     return H
 
-
 def UNET_att_right(X, X_left, channel, att_channel, kernel_size=3, stack_num=2,
                    activation='ReLU', atten_activation='ReLU', attention='add',
                    unpool=True, batch_norm=False, name='right0'):
@@ -441,5 +583,47 @@ def UNET_att_right(X, X_left, channel, att_channel, kernel_size=3, stack_num=2,
     
     return H
 
+def ResUNET_a_right(X, X_list, channel, kernel_size=3, dilation_num=[1,], 
+                    activation='ReLU', unpool=True, batch_norm=False, name='right0'):
+    '''
+    Decoder block of ResUNet-a
+    
+    Input
+    ----------
+        X: input tensor
+        X_list: a list of other tensors that connected to the input tensor
+        channel: number of convolution filters
+        kernel_size: size of 2-d convolution kernels
+        dilation_num: an iterable that defines dilation rates of convolutional layers
+                      stacks of conv2d is expected as `len(dilation_num)`.
+        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers
+        batch_norm: True for batch normalization, False otherwise.
+        name: name of the created keras layers.
+        
+    Output
+    ----------
+        X: output tensor.
 
+    *upsampling is fixed to 2-by-2, e.g., reducing feature map sizes from 64-by-64 to 32-by-32
+    
+    '''
+    
+    pool_size = 2
+    
+    if unpool:
+        X = UpSampling2D(size=(pool_size, pool_size), name='{}_unpool'.format(name))(X)
+    else:
+        # Transpose convolutional layer --> stacked linear convolutional layers
+        X = Conv2DTranspose(channel, kernel_size, strides=(pool_size, pool_size), 
+                                         padding='same', name='{}_trans_conv'.format(name))(X)
+        
+    # <--- *stacked convolutional can be applied here
+    X = concatenate([X,]+X_list, axis=3, name=name+'_concat')
+    
+    # Stacked convolutions after concatenation 
+    X = ResUNET_a_block(X, channel, kernel_size=kernel_size, dilation_num=dilation_num, activation=activation, 
+                        batch_norm=batch_norm, name='{}_resblock'.format(name))
+     
+    return X
 
