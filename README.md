@@ -6,28 +6,28 @@
 
 This repository contains `tensorflow.keras` implementations of U-net, U-net++, R2U-net, Attention U-net, ResUnet-a:
 
-| `keras_unet_collection.models`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Reference |
-|:-------------------------------|:----------|
-| U-net/Unet      | [Ronneberger et al. (2015)](https://link.springer.com/chapter/10.1007/978-3-319-24574-4_28) |
-| U-net++/Unet++  | [Zhou et al. (2018)](https://link.springer.com/chapter/10.1007/978-3-030-00889-5_1) |
-| R2U-Net         | [Alom et al. (2018)](https://arxiv.org/abs/1802.06955) |
-| Attention U-net | [Oktay et al. (2018)](https://arxiv.org/abs/1804.03999) |
-| ResUnet-a       | [Diakogiannis et al. (2020)](https://doi.org/10.1016/j.isprsjprs.2020.01.013) |
+| `keras_unet_collection.models`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Name | Reference |
+|:---------------|:----------------|:----------------|
+| `unet_2d`      | U-net/Unet      | [Ronneberger et al. (2015)](https://link.springer.com/chapter/10.1007/978-3-319-24574-4_28) |
+| `unet_plus_2d` | U-net++/Unet++  | [Zhou et al. (2018)](https://link.springer.com/chapter/10.1007/978-3-030-00889-5_1) |
+| `r2_unet_2d`   | R2U-Net         | [Alom et al. (2018)](https://arxiv.org/abs/1802.06955) |
+| `att_unet_2d`  | Attention U-net | [Oktay et al. (2018)](https://arxiv.org/abs/1804.03999) |
+| `resunet_a_2d` | ResUnet-a       | [Diakogiannis et al. (2020)](https://doi.org/10.1016/j.isprsjprs.2020.01.013) |
 
 These models are implemented with user-friendly keywords, including optional network depth, hidden layer activations and batch normalization. Examples refer to the [user guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
 
 Additional activation layers and loss functions are also provided:
 
-| ` keras_unet_collection.activations` | Reference |
-|:-------------------------------------|:----------|
-| Gaussian Error Linear Units (GELU)   | [Hendrycks et al. (2016)](https://arxiv.org/abs/1606.08415) |
-| Snake activation                     | [Liu et al. (2020)](https://arxiv.org/abs/2006.08195) |
+| ` keras_unet_collection.activations` | Name | Reference |
+|:--------|:----------------|:----------------|
+| `GELU`  | Gaussian Error Linear Units (GELU)   | [Hendrycks et al. (2016)](https://arxiv.org/abs/1606.08415) |
+| `Snake` | Snake activation                     | [Liu et al. (2020)](https://arxiv.org/abs/2006.08195) |
 
-| `keras_unet_collection.losses`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Reference |
-|:-------------------------------|:----------|
-| Tversky loss                   | [Hashemi et al. (2018)](https://ieeexplore.ieee.org/abstract/document/8573779) |
-| Focal Tversky loss             | [Abraham et al. (2019)](https://ieeexplore.ieee.org/abstract/document/8759329) |
-| CRPS loss (experimental)       | |
+| `keras_unet_collection.losses`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Name | Reference |
+|:----------------|:----------------|:----------------|
+| `tversky`       | Tversky loss                   | [Hashemi et al. (2018)](https://ieeexplore.ieee.org/abstract/document/8573779) |
+| `focal_tversky` | Focal Tversky loss             | [Abraham et al. (2019)](https://ieeexplore.ieee.org/abstract/document/8759329) |
+| `crps2d_tf`     | CRPS loss (experimental)       | |
 
 # Dependencies
 
