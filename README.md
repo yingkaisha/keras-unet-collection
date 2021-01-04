@@ -4,25 +4,25 @@ This repository contains `tensorflow.keras` implementations of U-net, U-net++, R
 
 | `keras_unet_collection.models`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Reference |
 |:-------------------------------|:----------|
-| U-net/Unet      | Ronneberger, O., Fischer, P. and Brox, T., 2015, October. U-net: Convolutional networks for biomedical image segmentation. In International Conference on Medical image computing and computer-assisted intervention (pp. 234-241). Springer, Cham. |
-| U-net++/Unet++  | Zhou, Z., Siddiquee, M.M.R., Tajbakhsh, N. and Liang, J., 2018. Unet++: A nested u-net architecture for medical image segmentation. In Deep Learning in Medical Image Analysis and Multimodal Learning for Clinical Decision Support (pp. 3-11). Springer, Cham. |
-| R2U-Net         | Alom, M.Z., Hasan, M., Yakopcic, C., Taha, T.M. and Asari, V.K., 2018. Recurrent residual convolutional neural network based on u-net (r2u-net) for medical image segmentation. arXiv preprint arXiv:1802.06955. |
-| Attention U-net | Oktay, O., Schlemper, J., Folgoc, L.L., Lee, M., Heinrich, M., Misawa, K., Mori, K., McDonagh, S., Hammerla, N.Y., Kainz, B. and Glocker, B., 2018. Attention 
-| ResUnet-a       | Diakogiannis, F.I., Waldner, F., Caccetta, P. and Wu, C., 2020. Resunet-a: a deep learning framework for semantic segmentation of remotely sensed data. ISPRS Journal of Photogrammetry and Remote Sensing, 162, pp.94-114. |
+| U-net/Unet      | [Ronneberger et al. (2015)](https://link.springer.com/chapter/10.1007/978-3-319-24574-4_28) |
+| U-net++/Unet++  | [Zhou et al. (2018)](https://link.springer.com/chapter/10.1007/978-3-030-00889-5_1) |
+| R2U-Net         | [Alom et al. (2018)](https://arxiv.org/abs/1802.06955) |
+| Attention U-net | [Oktay et al. (2018)](https://arxiv.org/abs/1804.03999) |
+| ResUnet-a       | [Diakogiannis et al. (2020)](https://www.sciencedirect.com/science/article/pii/S0924271620300149?casa_token=NEyVYTeBykMAAAAA:sDSnOwMCM2Q7iucSrKQrefUxr4LFNWHnMSXlSDqaoq8NTbsrqruNUAS6_WxhXnWOOWj0FRoKRA) |
 
 These models are implemented with user friendly key words, including optional network depth, hidden layer activations and batch normalization. Examples refers to the [user guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
 
 Additional activation layers and loss functions are also provided:
 
 | ` keras_unet_collection.activations` | Reference |
-|:------------------------------------|:----------|
-| Gaussian Error Linear Units (GELU)  | Hendrycks, D. and Gimpel, K., 2016. Gaussian error linear units (gelus). arXiv preprint arXiv:1606.08415. |
-| Snake activation                    | Ziyin, L., Hartwig, T. and Ueda, M., 2020. Neural networks fail to learn periodic functions and how to fix it. arXiv preprint arXiv:2006.08195. |
+|:-------------------------------------|:----------|
+| Gaussian Error Linear Units (GELU)   | [Hendrycks et al. (2016)](https://arxiv.org/abs/1606.08415) |
+| Snake activation                     | [Liu et al. (2020)](https://arxiv.org/abs/2006.08195) |
 
 | `keras_unet_collection.losses`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Reference |
 |:-------------------------------|:----------|
-| Tversky loss                   | Hashemi, S.R., Salehi, S.S.M., Erdogmus, D., Prabhu, S.P., Warfield, S.K. and Gholipour, A., 2018. Tversky as a loss function for highly unbalanced image segmentation using 3d fully convolutional deep networks. arXiv preprint arXiv:1803.11078. |
-| Focal Tversky loss             | Abraham, N. and Khan, N.M., 2019, April. A novel focal tversky loss function with improved attention u-net for lesion segmentation. In 2019 IEEE 16th International Symposium on Biomedical Imaging (ISBI 2019) (pp. 683-687). IEEE. |
+| Tversky loss                   | [Hashemi et al. (2018)](https://ieeexplore.ieee.org/abstract/document/8573779) |
+| Focal Tversky loss             | [Abraham et al. (2019)](https://ieeexplore.ieee.org/abstract/document/8759329) |
 | CRPS loss (experimental)       | |
 
 # Dependencies
