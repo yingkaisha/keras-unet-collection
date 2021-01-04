@@ -41,7 +41,8 @@ def unet_2d(input_size, filter_num, n_labels,
         batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
-        name: perfix of the created keras layers
+        name: perfix of the created keras layers.
+        
     Output
     ----------
         X: a keras model 
@@ -111,7 +112,8 @@ def att_unet_2d(input_size, filter_num, n_labels,
         batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
-        name: perfix of the created keras layers
+        name: perfix of the created keras layers.
+        
     Output
     ----------
         X: a keras model 
@@ -178,7 +180,8 @@ def unet_plus_2d(input_size, filter_num, n_labels,
         batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
-        name: perfix of the created keras layers
+        name: perfix of the created keras layers.
+        
     Output
     ----------
         X: a keras model 
@@ -265,7 +268,7 @@ def r2_unet_2d(input_size, filter_num, n_labels,
         batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
-        name: perfix of the created keras layers
+        name: perfix of the created keras layers.
         
     Output
     ----------
@@ -300,8 +303,8 @@ def r2_unet_2d(input_size, filter_num, n_labels,
     
     return model 
 
-def resunet_a_2d(input_size, filter_num, dilation_num, n_labels, 
-                 activation='ReLU', output_activation='Softmax', 
+def resunet_a_2d(input_size, filter_num, dilation_num, n_labels,
+                 aspp_num_down=256, aspp_num_up=128, activation='ReLU', output_activation='Softmax', 
                  batch_norm=True, unpool=True, name='resunet'):
     '''
     ResUNet-a
@@ -320,6 +323,9 @@ def resunet_a_2d(input_size, filter_num, dilation_num, n_labels,
                       Diakogiannis et al. (2020) suggested [1, 3, 15, 31]
                       
         n_labels: number of output labels.
+        aspp_num_down: number of Atrous Spatial Pyramid Pooling (ASPP) layer filters after the last downsampling block.
+        aspp_num_up: number of ASPP layer filters after the last upsampling block.
+                         
         activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., ReLU
         output_activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces. 
                            Default option is Softmax
@@ -331,18 +337,24 @@ def resunet_a_2d(input_size, filter_num, dilation_num, n_labels,
     Output
     ----------
         X: a keras model.
-    
-    *downsampling is achieved through strided convolution (Diakogiannis et al., 2020).
-    *`dilation_num` can be provided as 2d iterables, with the second dimension matches the model depth.
+        
+    * downsampling is achieved through strided convolution (Diakogiannis et al., 2020).
+    * `resunet_a_2d` does not support NoneType input shape.
+    * `dilation_num` can be provided as 2d iterables, with the second dimension matches the model depth.
       e.g., for len(filter_num) = 4; dilation_num can be provided as: [[1, 3, 15, 31], [1, 3, 15], [1,], [1,]]
       if a 1d iterable is provided, then depth-1 and 2 takes all the dilation rates, whereas deeper layers take
       reduced number of rates (dilation rates are verbosed in this case).
+      
     '''
     
     activation_func = eval(activation)
     depth_ = len(filter_num)
     X_skip = []
     
+    # input_size cannot have None
+    if input_size[0] is None or input_size[1] is None:
+        raise ValueError('`resunet_a_2d` does not support NoneType input shape')
+        
     # ----- #
     # expanding dilation numbers
     
@@ -389,7 +401,7 @@ def resunet_a_2d(input_size, filter_num, dilation_num, n_labels,
                             batch_norm=batch_norm, name='{}_resblock_{}'.format(name, ind_))
         X_skip.append(X)
 
-    X = ASPP_conv(X, 256, activation=activation, batch_norm=batch_norm, name='{}_aspp_bottom'.format(name))
+    X = ASPP_conv(X, aspp_num_down, activation=activation, batch_norm=batch_norm, name='{}_aspp_bottom'.format(name))
 
     X_skip = X_skip[:-1][::-1]
     dilation_ = dilation_[:-1][::-1]
@@ -401,7 +413,7 @@ def resunet_a_2d(input_size, filter_num, dilation_num, n_labels,
 
     X = concatenate([X_skip[-1], X], name='{}_concat_out'.format(name))
 
-    X = ASPP_conv(X, 128, activation=activation, batch_norm=batch_norm, name='{}_aspp_out'.format(name))
+    X = ASPP_conv(X, aspp_num_up, activation=activation, batch_norm=batch_norm, name='{}_aspp_out'.format(name))
 
     OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
 
