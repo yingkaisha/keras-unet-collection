@@ -14,7 +14,7 @@ This repository contains `tensorflow.keras` implementations of U-net, U-net++, R
 | `att_unet_2d`  | Attention U-net | [Oktay et al. (2018)](https://arxiv.org/abs/1804.03999) |
 | `resunet_a_2d` | ResUnet-a       | [Diakogiannis et al. (2020)](https://doi.org/10.1016/j.isprsjprs.2020.01.013) |
 
-These models are implemented with user-friendly keywords, including optional network depth, hidden layer activations and batch normalization. Examples refer to the [user guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
+These models are implemented with user-friendly keywords, including network depth, hidden layer activations and batch normalization. [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb) provided several examples.
 
 Additional activation layers and loss functions are also provided:
 
@@ -48,7 +48,7 @@ from keras_unet_collection import models
 
 * Jupyter notebooks are provided as [user guides](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
 
-* [Changlog](https://github.com/yingkaisha/keras-unet-collection/blob/main/CHANGELOG.md)
+* [Changelog](https://github.com/yingkaisha/keras-unet-collection/blob/main/CHANGELOG.md)
 
 # Overview
 
