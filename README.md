@@ -13,7 +13,7 @@ This repository contains `tensorflow.keras` implementations of U-net, U-net++, R
 | `r2_unet_2d`   | R2U-Net         | [Alom et al. (2018)](https://arxiv.org/abs/1802.06955) |
 | `att_unet_2d`  | Attention U-net | [Oktay et al. (2018)](https://arxiv.org/abs/1804.03999) |
 | `resunet_a_2d` | ResUnet-a       | [Diakogiannis et al. (2020)](https://doi.org/10.1016/j.isprsjprs.2020.01.013) |
-| `u2net_2d`     | U^-Net          | [Qin et al. (2020)](https://arxiv.org/abs/2005.09007 |
+| `u2net_2d`     | U^-Net          | [Qin et al. (2020)](https://arxiv.org/abs/2005.09007) |
 
 These models are implemented with user-friendly keywords, including network depth, hidden layer activations and batch normalization. [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb) provided several examples.
 
