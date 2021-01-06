@@ -299,8 +299,7 @@ def ASPP_conv(X, channel, activation='ReLU', batch_norm=True, name='aspp'):
     
     activation_func = eval(activation)
     bias_flag = not batch_norm
-    
-    #shape_before = tf_shape(X)
+
     shape_before = X.get_shape().as_list()
     b4 = GlobalAveragePooling2D(name='{}_avepool_b4'.format(name))(X)
     
@@ -355,9 +354,14 @@ def CONV_output(X, n_labels, kernel_size=1,
     X = Conv2D(n_labels, kernel_size, padding='same', use_bias=True, name=name)(X)
     
     if activation:
-        activation_func = eval(activation)
-        X = activation_func(name='{}_activation'.format(name))(X)
-    
+        
+        if activation == 'Sigmoid':
+            X = Activation('sigmoid', name='{}_activation'.format(name))(X)
+            
+        else:
+            activation_func = eval(activation)
+            X = activation_func(name='{}_activation'.format(name))(X)
+            
     return X
 
 def UNET_left(X, channel, kernel_size=3, 
@@ -433,6 +437,120 @@ def UNET_RR_left(X, channel, kernel_size=3,
                 activation=activation, batch_norm=batch_norm, name=name)    
     return X
 
+def RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True, name='RSU'):
+    '''
+    Residual U-blocks (RSU)
+    
+    ----------
+    Qin, X., Zhang, Z., Huang, C., Dehghan, M., Zaiane, O.R. and Jagersand, M., 2020. 
+    U2-Net: Going deeper with nested U-structure for salient object detection. 
+    Pattern Recognition, 106, p.107404.
+    
+    Input
+    ----------
+        X: input tensor
+        channel_in: number of "intermediate" channels
+        channel_out: number of "outside" channels
+        depth: number of down- and upsampling levels
+        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+        batch_norm: True for batch normalization, False otherwise.
+        name: name of the created keras layers.
+        
+    Output
+    ----------
+        X: output tensor
+        
+    '''
+    X_skip = []
+    
+    X = CONV_stack(X, channel_out, kernel_size=3, stack_num=1, 
+                   dilation_rate=1, activation=activation, batch_norm=batch_norm, 
+                   name='{}_in'.format(name))
+    X_skip.append(X)
+
+    X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, dilation_rate=1, 
+                   activation=activation, batch_norm=batch_norm, name='{}_down_0'.format(name))
+    X_skip.append(X)
+    
+    for i in range(depth):
+        X = MaxPooling2D(pool_size=(2, 2), name='{}_maxpool_{}'.format(name, i))(X)
+
+        X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, dilation_rate=1, 
+                       activation=activation, batch_norm=batch_norm, name='{}_down_{}'.format(name, i+1))
+        X_skip.append(X)
+
+    X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, 
+               dilation_rate=2, activation=activation, batch_norm=batch_norm, 
+               name='{}_up_0'.format(name))
+    
+    X_skip = X_skip[::-1]
+    
+    for i in range(depth):
+        X = concatenate([X, X_skip[i]], axis=-1, name='{}_concat_{}'.format(name, i))
+        X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, dilation_rate=1, 
+                       activation=activation, batch_norm=batch_norm, name='{}_up_{}'.format(name, i+1))
+        
+        X = UpSampling2D((2, 2), interpolation='bilinear', name='{}_unpool_{}'.format(name, i))(X)
+  
+    X = concatenate([X, X_skip[depth]], axis=-1, name='{}_concat_out'.format(name))
+
+    X = CONV_stack(X, channel_out, kernel_size=3, stack_num=1, dilation_rate=1, 
+                   activation=activation, batch_norm=batch_norm, name='{}_out'.format(name))
+    X = add([X, X_skip[-1]], name='{}_out_add'.format(name))
+    return X 
+
+def RSU4F(X, channel_in, channel_out, dilation_num=[1, 2, 4, 8], activation='ReLU', batch_norm=True, name='RSU4F'):
+    '''
+    Residual U-blocks with dilated convolutiona kernels (RSU4F)
+    
+    ----------
+    Qin, X., Zhang, Z., Huang, C., Dehghan, M., Zaiane, O.R. and Jagersand, M., 2020. 
+    U2-Net: Going deeper with nested U-structure for salient object detection. 
+    Pattern Recognition, 106, p.107404.
+    
+    Input
+    ----------
+        X: input tensor
+        channel_in: number of "intermediate" channels
+        channel_out: number of "outside" channels
+        dilation_num: an iterable that defines dilation rates of convolutional layers.
+                      Qin et al. (2020) suggested [1, 2, 4, 8].
+                      
+        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+        batch_norm: True for batch normalization, False otherwise.
+        name: name of the created keras layers.
+        
+    Output
+    ----------
+        X: output tensor
+        
+    '''
+    
+    X_skip = []    
+    X = CONV_stack(X, channel_out, kernel_size=3, stack_num=1, dilation_rate=1, 
+                   activation=activation, batch_norm=batch_norm, name='{}_in'.format(name))
+    X_skip.append(X)
+    
+    for i, d in enumerate(dilation_num):
+
+        X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, dilation_rate=d, 
+                       activation=activation, batch_norm=batch_norm, name='{}_down_{}'.format(name, i))
+        X_skip.append(X)
+
+    X_skip = X_skip[:-1][::-1]
+    dilation_num = dilation_num[:-1][::-1]
+    
+    for i, d in enumerate(dilation_num[:-1]):
+
+        X = concatenate([X, X_skip[i]], axis=-1, name='{}_concat_{}'.format(name, i))
+        X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, dilation_rate=d, 
+                       activation=activation, batch_norm=batch_norm, name='{}_up_{}'.format(name, i))
+
+    X = concatenate([X, X_skip[2]], axis=-1, name='{}_concat_out'.format(name))
+    X = CONV_stack(X, channel_out, kernel_size=3, stack_num=1, dilation_rate=1, 
+                   activation=activation, batch_norm=batch_norm, name='{}_out'.format(name))
+    
+    return add([X, X_skip[-1]], name='{}_out_add'.format(name))
 
 def UNET_right(X, X_list, channel, kernel_size=3, 
                stack_num=2, activation='ReLU',
@@ -450,7 +568,8 @@ def UNET_right(X, X_list, channel, kernel_size=3,
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers
         batch_norm: True for batch normalization, False otherwise.
-        name: name of the created keras layers
+        name: name of the created keras layers.
+        
     Output
     ----------
         X: output tensor
