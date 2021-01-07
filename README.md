@@ -4,7 +4,7 @@
 [![PyPI license](https://img.shields.io/pypi/l/keras-unet-collection.svg)](https://pypi.org/project/keras-unet-collection/)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/yingkaisha/keras-unet-collection/graphs/commit-activity)
 
-This repository contains `tensorflow.keras` implementations of U-net, U-net++, R2U-net, Attention U-net, ResUnet-a:
+This repository contains `tensorflow.keras` implementations of U-net, U-net++, R2U-net, Attention U-net, ResUnet-a, U^2-Net:
 
 | `keras_unet_collection.models`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Name | Reference |
 |:---------------|:----------------|:----------------|
@@ -15,7 +15,7 @@ This repository contains `tensorflow.keras` implementations of U-net, U-net++, R
 | `resunet_a_2d` | ResUnet-a       | [Diakogiannis et al. (2020)](https://doi.org/10.1016/j.isprsjprs.2020.01.013) |
 | `u2net_2d`     | U^-Net          | [Qin et al. (2020)](https://arxiv.org/abs/2005.09007) |
 
-These models are implemented with user-friendly keywords, including network depth, hidden layer activations and batch normalization. [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb) provided several examples.
+These models are implemented with user-friendly hyper-parameter options and keywords, including network depth, hidden layer activations and batch normalization. [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb) provided several examples.
 
 Additional activation layers and loss functions are also provided:
 
@@ -48,6 +48,8 @@ from keras_unet_collection import models
 ```
 
 * Jupyter notebooks are provided as [user guides](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
+
+> Note: Because of the flexible hyper-parameter options, neural networks produced by this package may not be compatible with other pre-trained models of the same name/kind. Training from scratch is recommended.
 
 * [Changelog](https://github.com/yingkaisha/keras-unet-collection/blob/main/CHANGELOG.md)
 
