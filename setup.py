@@ -5,10 +5,10 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name = "keras-unet-collection",
-    version = "0.0.4",
+    version = "0.0.5",
     author = "Yingkai (Kyle) Sha",
     author_email = "yingkaisha@gmail.com",
-    description = "The tensorflow.keras implementations of U-net, U-net++, Residual U-net, Attention U-net.",
+    description = "The tensorflow.keras implementations of U-net, U-net++, R2U-net, Attention U-net, ResUnet-a ,and U^2-Net.",
     long_description = long_description,
     long_description_content_type = "text/markdown",
     url = "https://github.com/yingkaisha/keras-unet-collection",
