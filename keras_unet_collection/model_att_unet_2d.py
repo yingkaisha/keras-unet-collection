@@ -9,6 +9,59 @@ from tensorflow.keras.layers import BatchNormalization, Activation, concatenate,
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU
 from tensorflow.keras.models import Model
 
+
+def UNET_att_right(X, X_left, channel, att_channel, kernel_size=3, stack_num=2,
+                   activation='ReLU', atten_activation='ReLU', attention='add',
+                   unpool=True, batch_norm=False, name='right0'):
+    '''
+    Decoder block of Attention-UNet
+    
+    Input
+    ----------
+        X: input tensor
+        X_left: the output of corresponded downsampling output tensor (the input tensor is upsampling input)
+        channel: number of convolution filters
+        att_channel: number of intermediate channel.        
+        kernel_size: size of 2-d convolution kernels.
+        stack_num: number of convolutional layers.
+        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+        atten_activation: a nonlinear attnetion activation.
+                    The `sigma_1` in Oktay et al. 2018. Default is ReLU
+        attention: 'add' for additive attention. 'multiply' for multiplicative attention.
+                   Oktay et al. 2018 applied additive attention.
+                   
+        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers
+        batch_norm: True for batch normalization, False otherwise.
+        name: name of the created keras layers
+    Output
+    ----------
+        X: output tensor
+
+    *upsampling is fixed to 2-by-2, e.g., reducing feature map sizes from 64-by-64 to 32-by-32
+    
+    '''
+    
+    pool_size = 2
+    
+    if unpool:
+        X = UpSampling2D(size=(pool_size, pool_size), name='{}_unpool'.format(name))(X)
+    else:
+        # Transpose convolutional layer --> stacked linear convolutional layers
+        X = Conv2DTranspose(channel, kernel_size, strides=(pool_size, pool_size), 
+                                         padding='same', name='{}_trans_conv'.format(name))(X)
+        
+    X_left = attention_gate(X=X_left, g=X, channel=att_channel, activation=atten_activation, 
+                            attention=attention, name='{}_att'.format(name))
+    
+    # Tensor concatenation
+    H = concatenate([X, X_left], axis=-1, name='{}_concat'.format(name))
+    
+    # stacked linear convolutional layers after concatenation
+    H = CONV_stack(H, channel, kernel_size, stack_num=stack_num, activation=activation, 
+                   batch_norm=batch_norm, name='{}_conv_after_concat'.format(name))
+    
+    return H
+
 def att_unet_2d(input_size, filter_num, n_labels,
                 stack_num_down=2, stack_num_up=2,
                 activation='ReLU', atten_activation='ReLU', attention='add', output_activation='Softmax', 

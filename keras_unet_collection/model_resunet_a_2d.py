@@ -9,6 +9,90 @@ from tensorflow.keras.layers import BatchNormalization, Activation, concatenate,
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU
 from tensorflow.keras.models import Model
 
+
+def ResUNET_a_block(X, channel, kernel_size=3, dilation_num=1.0, activation='ReLU', batch_norm=False, name='res_a_block'):
+    '''
+    ResUNET_a_block
+    
+    ----------
+    Diakogiannis, F.I., Waldner, F., Caccetta, P. and Wu, C., 2020. Resunet-a: a deep learning framework for 
+    semantic segmentation of remotely sensed data. ISPRS Journal of Photogrammetry and Remote Sensing, 162, pp.94-114.
+    
+    Input
+    ----------
+        X: input tensor
+        channel: number of convolution filters
+        kernel_size: size of 2-d convolution kernels
+        dilation_num: an iterable that defines dilation rates of convolutional layers
+                      stacks of conv2d is expected as `len(dilation_num)`.
+        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+        batch_norm: True for batch normalization, False otherwise.
+        name: name of the created keras layers
+    Output
+    ----------
+        X: output tensor
+    
+    '''
+    
+    X_res = []
+    
+    for i, d in enumerate(dilation_num):
+        
+        X_res.append(CONV_stack(X, channel, kernel_size=kernel_size, stack_num=2, dilation_rate=d, 
+                                activation=activation, batch_norm=batch_norm, name='{}_stack{}'.format(name, i)))
+        
+    if len(X_res) > 1:
+        return add(X_res)
+    
+    else:
+        return X_res[0]
+
+
+def ResUNET_a_right(X, X_list, channel, kernel_size=3, dilation_num=[1,], 
+                    activation='ReLU', unpool=True, batch_norm=False, name='right0'):
+    '''
+    Decoder block of ResUNet-a
+    
+    Input
+    ----------
+        X: input tensor
+        X_list: a list of other tensors that connected to the input tensor
+        channel: number of convolution filters
+        kernel_size: size of 2-d convolution kernels
+        dilation_num: an iterable that defines dilation rates of convolutional layers
+                      stacks of conv2d is expected as `len(dilation_num)`.
+        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers
+        batch_norm: True for batch normalization, False otherwise.
+        name: name of the created keras layers.
+        
+    Output
+    ----------
+        X: output tensor.
+
+    *upsampling is fixed to 2-by-2, e.g., reducing feature map sizes from 64-by-64 to 32-by-32
+    
+    '''
+    
+    pool_size = 2
+    
+    if unpool:
+        X = UpSampling2D(size=(pool_size, pool_size), name='{}_unpool'.format(name))(X)
+    else:
+        # Transpose convolutional layer --> stacked linear convolutional layers
+        X = Conv2DTranspose(channel, kernel_size, strides=(pool_size, pool_size), 
+                                         padding='same', name='{}_trans_conv'.format(name))(X)
+        
+    # <--- *stacked convolutional can be applied here
+    X = concatenate([X,]+X_list, axis=3, name=name+'_concat')
+    
+    # Stacked convolutions after concatenation 
+    X = ResUNET_a_block(X, channel, kernel_size=kernel_size, dilation_num=dilation_num, activation=activation, 
+                        batch_norm=batch_norm, name='{}_resblock'.format(name))
+     
+    return X
+
+
 def resunet_a_2d(input_size, filter_num, dilation_num, n_labels,
                  aspp_num_down=256, aspp_num_up=128, activation='ReLU', output_activation='Softmax', 
                  batch_norm=True, unpool=True, name='resunet'):

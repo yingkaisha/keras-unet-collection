@@ -9,6 +9,122 @@ from tensorflow.keras.layers import BatchNormalization, Activation, concatenate,
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU
 from tensorflow.keras.models import Model
 
+
+def RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True, name='RSU'):
+    '''
+    Residual U-blocks (RSU)
+    
+    ----------
+    Qin, X., Zhang, Z., Huang, C., Dehghan, M., Zaiane, O.R. and Jagersand, M., 2020. 
+    U2-Net: Going deeper with nested U-structure for salient object detection. 
+    Pattern Recognition, 106, p.107404.
+    
+    Input
+    ----------
+        X: input tensor
+        channel_in: number of intermediate channels
+        channel_out: number of output channels
+        depth: number of down- and upsampling levels
+        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+        batch_norm: True for batch normalization, False otherwise.
+        name: name of the created keras layers.
+        
+    Output
+    ----------
+        X: output tensor
+        
+    '''
+    X_skip = []
+    
+    X = CONV_stack(X, channel_out, kernel_size=3, stack_num=1, 
+                   dilation_rate=1, activation=activation, batch_norm=batch_norm, 
+                   name='{}_in'.format(name))
+    X_skip.append(X)
+
+    X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, dilation_rate=1, 
+                   activation=activation, batch_norm=batch_norm, name='{}_down_0'.format(name))
+    X_skip.append(X)
+    
+    for i in range(depth):
+        X = MaxPooling2D(pool_size=(2, 2), name='{}_maxpool_{}'.format(name, i))(X)
+
+        X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, dilation_rate=1, 
+                       activation=activation, batch_norm=batch_norm, name='{}_down_{}'.format(name, i+1))
+        X_skip.append(X)
+
+    X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, 
+               dilation_rate=2, activation=activation, batch_norm=batch_norm, 
+               name='{}_up_0'.format(name))
+    
+    X_skip = X_skip[::-1]
+    
+    for i in range(depth):
+        X = concatenate([X, X_skip[i]], axis=-1, name='{}_concat_{}'.format(name, i))
+        X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, dilation_rate=1, 
+                       activation=activation, batch_norm=batch_norm, name='{}_up_{}'.format(name, i+1))
+        
+        X = UpSampling2D((2, 2), interpolation='bilinear', name='{}_unpool_{}'.format(name, i))(X)
+  
+    X = concatenate([X, X_skip[depth]], axis=-1, name='{}_concat_out'.format(name))
+
+    X = CONV_stack(X, channel_out, kernel_size=3, stack_num=1, dilation_rate=1, 
+                   activation=activation, batch_norm=batch_norm, name='{}_out'.format(name))
+    X = add([X, X_skip[-1]], name='{}_out_add'.format(name))
+    return X 
+
+def RSU4F(X, channel_in, channel_out, dilation_num=[1, 2, 4, 8], activation='ReLU', batch_norm=True, name='RSU4F'):
+    '''
+    Residual U-blocks with dilated convolutiona kernels (RSU4F)
+    
+    ----------
+    Qin, X., Zhang, Z., Huang, C., Dehghan, M., Zaiane, O.R. and Jagersand, M., 2020. 
+    U2-Net: Going deeper with nested U-structure for salient object detection. 
+    Pattern Recognition, 106, p.107404.
+    
+    Input
+    ----------
+        X: input tensor
+        channel_in: number of intermediate channels
+        channel_out: number of output channels
+        dilation_num: an iterable that defines dilation rates of convolutional layers.
+                      Qin et al. (2020) suggested [1, 2, 4, 8].
+                      
+        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+        batch_norm: True for batch normalization, False otherwise.
+        name: name of the created keras layers.
+        
+    Output
+    ----------
+        X: output tensor
+        
+    '''
+    
+    X_skip = []    
+    X = CONV_stack(X, channel_out, kernel_size=3, stack_num=1, dilation_rate=1, 
+                   activation=activation, batch_norm=batch_norm, name='{}_in'.format(name))
+    X_skip.append(X)
+    
+    for i, d in enumerate(dilation_num):
+
+        X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, dilation_rate=d, 
+                       activation=activation, batch_norm=batch_norm, name='{}_down_{}'.format(name, i))
+        X_skip.append(X)
+
+    X_skip = X_skip[:-1][::-1]
+    dilation_num = dilation_num[:-1][::-1]
+    
+    for i, d in enumerate(dilation_num[:-1]):
+
+        X = concatenate([X, X_skip[i]], axis=-1, name='{}_concat_{}'.format(name, i))
+        X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, dilation_rate=d, 
+                       activation=activation, batch_norm=batch_norm, name='{}_up_{}'.format(name, i))
+
+    X = concatenate([X, X_skip[2]], axis=-1, name='{}_concat_out'.format(name))
+    X = CONV_stack(X, channel_out, kernel_size=3, stack_num=1, dilation_rate=1, 
+                   activation=activation, batch_norm=batch_norm, name='{}_out'.format(name))
+    
+    return add([X, X_skip[-1]], name='{}_out_add'.format(name))
+
 def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter_mid_num_down='auto', filter_mid_num_up='auto', 
              filter_4f_num='auto', filter_4f_mid_num='auto', activation='ReLU', output_activation='Sigmoid', 
              batch_norm=False, deep_supervision=False, name='u2net'):
