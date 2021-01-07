@@ -47,9 +47,9 @@ from keras_unet_collection import models
 # e.g. models.unet_2d(...)
 ```
 
-* Jupyter notebooks are provided as [user guides](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
+* **Note**: Because of the changable hyper-parameter options, neural networks produced by this package may not be compatible with other pre-trained models of the same name. Training from scratch is recommended.
 
-> Note: Because of the flexible hyper-parameter options, neural networks produced by this package may not be compatible with other pre-trained models of the same name/kind. Training from scratch is recommended.
+* Jupyter notebooks are provided as [user guides](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
 
 * [Changelog](https://github.com/yingkaisha/keras-unet-collection/blob/main/CHANGELOG.md)
 
