@@ -14,6 +14,8 @@ def RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True,
     '''
     Residual U-blocks (RSU)
     
+    RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True, name='RSU')
+    
     ----------
     Qin, X., Zhang, Z., Huang, C., Dehghan, M., Zaiane, O.R. and Jagersand, M., 2020. 
     U2-Net: Going deeper with nested U-structure for salient object detection. 
@@ -76,6 +78,8 @@ def RSU4F(X, channel_in, channel_out, dilation_num=[1, 2, 4, 8], activation='ReL
     '''
     Residual U-blocks with dilated convolutiona kernels (RSU4F)
     
+    RSU4F(X, channel_in, channel_out, dilation_num=[1, 2, 4, 8], activation='ReLU', batch_norm=True, name='RSU4F')
+    
     ----------
     Qin, X., Zhang, Z., Huang, C., Dehghan, M., Zaiane, O.R. and Jagersand, M., 2020. 
     U2-Net: Going deeper with nested U-structure for salient object detection. 
@@ -131,6 +135,10 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
     
     '''
     U^2-Net
+    
+    u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter_mid_num_down='auto', filter_mid_num_up='auto', 
+             filter_4f_num='auto', filter_4f_mid_num='auto', activation='ReLU', output_activation='Sigmoid', 
+             batch_norm=False, deep_supervision=False, name='u2net')
     
     ----------
     Qin, X., Zhang, Z., Huang, C., Dehghan, M., Zaiane, O.R. and Jagersand, M., 2020. 
