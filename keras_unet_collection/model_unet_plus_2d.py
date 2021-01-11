@@ -12,18 +12,19 @@ from tensorflow.keras.models import Model
 def unet_plus_2d(input_size, filter_num, n_labels,
                  stack_num_down=2, stack_num_up=2,
                  activation='ReLU', output_activation='Softmax', 
-                 batch_norm=False, pool=True, unpool=True, name='xnet'):
+                 batch_norm=False, pool=True, unpool=True, deep_supervision=False, name='xnet'):
     '''
     U-net++ or nested U-net
     
     unet_plus_2d(input_size, filter_num, n_labels,
                  stack_num_down=2, stack_num_up=2,
                  activation='ReLU', output_activation='Softmax', 
-                 batch_norm=False, pool=True, unpool=True, name='xnet')
+                 batch_norm=False, pool=True, unpool=True, deep_supervision=False, name='xnet')
     
     ----------
-    Zhou, Z., Siddiquee, M.M.R., Tajbakhsh, N. and Liang, J., 2018. Unet++: A nested u-net architecture for medical image segmentation. 
-    In Deep Learning in Medical Image Analysis and Multimodal Learning for Clinical Decision Support (pp. 3-11). Springer, Cham.
+    Zhou, Z., Siddiquee, M.M.R., Tajbakhsh, N. and Liang, J., 2018. Unet++: A nested u-net architecture 
+    for medical image segmentation. In Deep Learning in Medical Image Analysis and Multimodal Learning 
+    for Clinical Decision Support (pp. 3-11). Springer, Cham.
     
     Input
     ----------
@@ -40,7 +41,8 @@ def unet_plus_2d(input_size, filter_num, n_labels,
                            if None is received, then linear activation is applied.
         batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
-        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
+        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.
+        deep_supervision: True for a model that supports deep supervision. Details see Zhou et al. (2018).
         name: prefix of the created keras layers.
         
     Output
@@ -85,9 +87,24 @@ def unet_plus_2d(input_size, filter_num, n_labels,
                            stack_num=stack_num_up, activation=activation, name='xnet_{}{}'.format(nest_lev, i)))
             
     # output
-    OUT = CONV_output(X_nest_skip[-1][-1], n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
-    
+    if deep_supervision:
+        
+        OUT_list = []
+        print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows (the last one is final output):')
+        
+        for i in range(1, depth_):
+            print('\t{}_output_sup{}'.format(name, i))
+            OUT_list.append(CONV_output(X_nest_skip[i][0], n_labels, kernel_size=1, 
+                                         activation=output_activation, name='{}_output_sup{}'.format(name, i)))
+        
+        print('\t{}_output_final'.format(name))
+        OUT_list.append(CONV_output(X_nest_skip[-1][0], n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name)))
+        
+    else:
+        OUT = CONV_output(X_nest_skip[-1][0], n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
+        OUT_list = [OUT,]
+        
     # model
-    model = Model(inputs=[IN], outputs=[OUT], name='{}_model'.format(name))
+    model = Model(inputs=[IN], outputs=OUT_list, name='{}_model'.format(name))
     
     return model
