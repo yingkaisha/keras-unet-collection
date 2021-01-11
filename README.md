@@ -4,7 +4,7 @@
 [![PyPI license](https://img.shields.io/pypi/l/keras-unet-collection.svg)](https://pypi.org/project/keras-unet-collection/)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/yingkaisha/keras-unet-collection/graphs/commit-activity)
 
-This repository contains `tensorflow.keras` implementations of U-net, U-net++, R2U-net, Attention U-net, ResUnet-a, U^2-Net:
+This project contains `tensorflow.keras` implementations of U-net, U-net++, R2U-net, Attention U-net, ResUnet-a, U^2-Net:
 
 | `keras_unet_collection.models`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Name | Reference |
 |:---------------|:----------------|:----------------|
@@ -13,11 +13,16 @@ This repository contains `tensorflow.keras` implementations of U-net, U-net++, R
 | `r2_unet_2d`   | R2U-Net         | [Alom et al. (2018)](https://arxiv.org/abs/1802.06955) |
 | `att_unet_2d`  | Attention U-net | [Oktay et al. (2018)](https://arxiv.org/abs/1804.03999) |
 | `resunet_a_2d` | ResUnet-a       | [Diakogiannis et al. (2020)](https://doi.org/10.1016/j.isprsjprs.2020.01.013) |
-| `u2net_2d`     | U^2-Net          | [Qin et al. (2020)](https://arxiv.org/abs/2005.09007) |
+| `u2net_2d`     | U^2-Net         | [Qin et al. (2020)](https://arxiv.org/abs/2005.09007) |
 
-These models are implemented with user-friendly hyper-parameter options and keywords, including network depth, hidden layer activations and batch normalization. [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb) provided several examples.
+| ` keras_unet_collection.backbones` | Note |
+|:-----------------------------------|:-----|
+| `unet_2d_backbone`, `unet_plus_2d_backbone`, `r2_unet_2d_backbone`, `att_unet_2d_backbone`, `resunet_a_2d_backbone`, `u2net_2d_backbone` | Functions that accept an input tensor and hyper-parameters of the corresponded model, and produce output tensors of the backbone (i.e., the majority part of the hidden layers).<br />These functions are used for model customization, evaluation, and debugging. |
 
-Additional activation layers and loss functions are also provided:
+These models and backbone functions are implemented with user-friendly hyper-parameter options , including network depth, hidden layer activations and batch normalization for all the U-net variants, and deep supervision for U-net++ and U^2-Net. See [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb) for more details.
+
+----------
+This project also contains activation layers and loss functions:
 
 | ` keras_unet_collection.activations` | Name | Reference |
 |:--------|:----------------|:----------------|
