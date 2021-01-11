@@ -9,10 +9,11 @@ from tensorflow.keras.layers import BatchNormalization, Activation, concatenate,
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU
 from tensorflow.keras.models import Model
 
-
 def ResUNET_a_block(X, channel, kernel_size=3, dilation_num=1.0, activation='ReLU', batch_norm=False, name='res_a_block'):
     '''
     ResUNET_a_block
+    
+    ResUNET_a_block(X, channel, kernel_size=3, dilation_num=1.0, activation='ReLU', batch_norm=False, name='res_a_block')
     
     ----------
     Diakogiannis, F.I., Waldner, F., Caccetta, P. and Wu, C., 2020. Resunet-a: a deep learning framework for 
@@ -53,6 +54,9 @@ def ResUNET_a_right(X, X_list, channel, kernel_size=3, dilation_num=[1,],
     '''
     Decoder block of ResUNet-a
     
+    ResUNET_a_right(X, X_list, channel, kernel_size=3, dilation_num=[1,], 
+                    activation='ReLU', unpool=True, batch_norm=False, name='right0')
+    
     Input
     ----------
         X: input tensor
@@ -92,86 +96,64 @@ def ResUNET_a_right(X, X_list, channel, kernel_size=3, dilation_num=[1,],
      
     return X
 
-
-def resunet_a_2d(input_size, filter_num, dilation_num, n_labels,
-                 aspp_num_down=256, aspp_num_up=128, activation='ReLU', output_activation='Softmax', 
-                 batch_norm=True, unpool=True, name='resunet'):
+def resunet_a_2d_backbone(input_tensor, filter_num, dilation_num,
+                          aspp_num_down=256, aspp_num_up=128, activation='ReLU',
+                          batch_norm=True, unpool=True, name='resunet'):
     '''
-    ResUNet-a
+    The backbone of ResUNet-a
     
+    resunet_a_2d_backbone(input_tensor, filter_num, dilation_num,
+                          aspp_num_down=256, aspp_num_up=128, activation='ReLU',
+                          batch_norm=True, unpool=True, name='resunet')
+                          
     ----------
     Diakogiannis, F.I., Waldner, F., Caccetta, P. and Wu, C., 2020. Resunet-a: a deep learning framework for 
     semantic segmentation of remotely sensed data. ISPRS Journal of Photogrammetry and Remote Sensing, 162, pp.94-114.
     
     Input
     ----------
-        input_size: a tuple that defines the shape of input, e.g., (None, None, 3)
+        input_tensor: the input tensor of the backbone, e.g., keras.layers.Inpyt((128, 128, 3))
         filter_num: an iterable that defines number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(filter_num)`
         dilation_num: an iterable that defines dilation rates of convolutional layers.
-                      Diakogiannis et al. (2020) suggested [1, 3, 15, 31]
-                      
-        n_labels: number of output labels.
+                      Diakogiannis et al. (2020) suggested [1, 3, 15, 31].
+                      *This backbone function requires `len(filter_num) == len(dilation_num)`.
+                       Explicitly defining dilation rates for each down-/upsampling level.
         aspp_num_down: number of Atrous Spatial Pyramid Pooling (ASPP) layer filters after the last downsampling block.
-        aspp_num_up: number of ASPP layer filters after the last upsampling block.
-                         
+        aspp_num_up: number of ASPP layer filters after the last upsampling block.                 
         activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., ReLU
-        output_activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces or 'Sigmoid'.
-                           Default option is Softmax
-                           if None is received, then linear activation is applied.
         batch_norm: True for batch normalization.
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
         name: prefix of the created keras layers.
         
     Output
     ----------
-        X: a keras model.
+        X: the output tensor of the backbone.
         
-    * downsampling is achieved through strided convolution (Diakogiannis et al., 2020).
-    * `resunet_a_2d` does not support NoneType input shape.
-    * `dilation_num` can be provided as 2d iterables, with the second dimension matches the model depth.
+    * downsampling is achieved through strided convolutional layers (Diakogiannis et al., 2020).
+    * If this backbone function is involved in network training, then the input shape cannot have NoneType.
+    * `dilation_num` should be provided as 2d iterables, with the second dimension matches the model depth.
       e.g., for len(filter_num) = 4; dilation_num can be provided as: [[1, 3, 15, 31], [1, 3, 15], [1,], [1,]]
-      if a 1d iterable is provided, then depth-1 and 2 takes all the dilation rates, whereas deeper layers take
-      reduced number of rates (dilation rates are verbosed in this case).
       
     '''
     
     activation_func = eval(activation)
+    
     depth_ = len(filter_num)
     X_skip = []
     
-    # input_size cannot have None
-    if input_size[0] is None or input_size[1] is None:
-        raise ValueError('`resunet_a_2d` does not support NoneType input shape')
-        
     # ----- #
-    # expanding dilation numbers
-    
+    # rejecting auto-mode from this backbone function
     if isinstance(dilation_num[0], int):
-        print("Received dilation rates: {}".format(dilation_num))
-    
-        deep_ = (depth_-2)//2
-        dilation_ = [[] for _ in range(depth_)]
-        
-        print("Expanding dilation rates:")
-
-        for i in range(depth_):
-            if i <= 1:
-                dilation_[i] += dilation_num
-            elif i > 1 and i <= deep_+1:
-                dilation_[i] += dilation_num[:-1]
-            else:
-                dilation_[i] += [1,]
-            print('\tdepth-{}, dilation_rate = {}'.format(i, dilation_[i]))
+        raise ValueError('`resunet_a_2d_backbone` does not support automated determination of `dilation_num`.')
     else:
         dilation_ = dilation_num
     # ----- #
     
-    IN = Input(input_size)
-    # ----- #
+    X = input_tensor
+    
     # input mapping with 1-by-1 conv
-    X = IN
     X = Conv2D(filter_num[0], 1, 1, dilation_rate=1, padding='same', 
                use_bias=True, name='{}_input_mapping'.format(name))(X)
     X = activation_func(name='{}_input_activation'.format(name))(X)
@@ -204,9 +186,100 @@ def resunet_a_2d(input_size, filter_num, dilation_num, n_labels,
     X = concatenate([X_skip[-1], X], name='{}_concat_out'.format(name))
 
     X = ASPP_conv(X, aspp_num_up, activation=activation, batch_norm=batch_norm, name='{}_aspp_out'.format(name))
+    
+    return X
 
+
+def resunet_a_2d(input_size, filter_num, dilation_num, n_labels,
+                 aspp_num_down=256, aspp_num_up=128, activation='ReLU', output_activation='Softmax', 
+                 batch_norm=True, unpool=True, name='resunet'):
+    '''
+    ResUNet-a
+    
+    resunet_a_2d(input_size, filter_num, dilation_num, n_labels,
+                 aspp_num_down=256, aspp_num_up=128, activation='ReLU', output_activation='Softmax', 
+                 batch_norm=True, unpool=True, name='resunet')
+                 
+    ----------
+    Diakogiannis, F.I., Waldner, F., Caccetta, P. and Wu, C., 2020. Resunet-a: a deep learning framework for 
+    semantic segmentation of remotely sensed data. ISPRS Journal of Photogrammetry and Remote Sensing, 162, pp.94-114.
+    
+    Input
+    ----------
+        input_size: a tuple that defines the shape of input, e.g., (None, None, 3)
+        filter_num: an iterable that defines number of filters for each \
+                      down- and upsampling level. E.g., [64, 128, 256, 512]
+                      the depth is expected as `len(filter_num)`
+        dilation_num: an iterable that defines dilation rates of convolutional layers.
+                      Diakogiannis et al. (2020) suggested [1, 3, 15, 31]
+                      * `dilation_num` can be provided as 2d iterables, with the second dimension matches 
+                      the model depth. e.g., for len(filter_num) = 4; dilation_num can be provided as: 
+                      [[1, 3, 15, 31], [1, 3, 15], [1,], [1,]]
+                      * If `dilation_num` is not provided per down-/upsampling level, then the automated
+                      determinations will be applied.
+        n_labels: number of output labels.
+        aspp_num_down: number of Atrous Spatial Pyramid Pooling (ASPP) layer filters after the last downsampling block.
+        aspp_num_up: number of ASPP layer filters after the last upsampling block.
+                         
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., ReLU
+        output_activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces or 'Sigmoid'.
+                           Default option is Softmax
+                           if None is received, then linear activation is applied.
+        batch_norm: True for batch normalization.
+        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
+        name: prefix of the created keras layers.
+        
+    Output
+    ----------
+        model: a keras model.
+        
+    * downsampling is achieved through strided convolution (Diakogiannis et al., 2020).
+    * `resunet_a_2d` does not support NoneType input shape.
+    
+    '''
+    
+    activation_func = eval(activation)
+    depth_ = len(filter_num)
+    
+    X_skip = []
+    
+    # input_size cannot have None
+    if input_size[0] is None or input_size[1] is None:
+        raise ValueError('`resunet_a_2d` does not support NoneType input shape')
+        
+    # ----- #
+    if isinstance(dilation_num[0], int):
+        print("Received dilation rates: {}".format(dilation_num))
+    
+        deep_ = (depth_-2)//2
+        dilation_ = [[] for _ in range(depth_)]
+        
+        print("Received dilation rates are not defined on a per downsampling level basis.")
+        print("Automated determinations are applied with the following details:")
+        
+        for i in range(depth_):
+            if i <= 1:
+                dilation_[i] += dilation_num
+            elif i > 1 and i <= deep_+1:
+                dilation_[i] += dilation_num[:-1]
+            else:
+                dilation_[i] += [1,]
+            print('\tdepth-{}, dilation_rate = {}'.format(i, dilation_[i]))
+            
+    else:
+        dilation_ = dilation_num
+    # ----- #
+    
+    IN = Input(input_size)
+    
+    # backbone
+    X = resunet_a_2d_backbone(IN, filter_num, dilation_,
+                              aspp_num_down=aspp_num_down, aspp_num_up=aspp_num_up, activation=activation,
+                              batch_norm=batch_norm, unpool=unpool, name=name)
+    
     OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
 
-    model = Model([IN], [OUT])
+    model = Model([IN], [OUT,])
     
     return model
+
