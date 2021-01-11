@@ -86,7 +86,7 @@ def RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True,
 
 def RSU4F(X, channel_in, channel_out, dilation_num=[1, 2, 4, 8], activation='ReLU', batch_norm=True, name='RSU4F'):
     '''
-    Residual U-blocks with dilated convolutiona kernels (RSU4F)
+    Residual U-blocks with dilated convolutional kernels (RSU4F)
     
     RSU4F(X, channel_in, channel_out, dilation_num=[1, 2, 4, 8], activation='ReLU', batch_norm=True, name='RSU4F')
     
@@ -295,7 +295,7 @@ def u2net_2d_backbone(input_tensor,
 
 
 def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter_mid_num_down='auto', filter_mid_num_up='auto', 
-             filter_4f_num='auto', filter_4f_mid_num='auto', activation='ReLU', output_activation='Sigmoid', 
+             filter_4f_num='auto', filter_4f_mid_num='auto', activation='ReLU', output_activation='Softmax', 
              batch_norm=False, pool=True, unpool=True, deep_supervision=False, name='u2net'):
     
     '''
@@ -351,12 +351,11 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
         deep_supervision: True for a model that supports deep supervision. Details see Qin et al. (2020).
         name: prefix of the created keras layers.    
     
-    * automated mode will produce a slightly larger network, different from that of Qin et al. (2020).
+    * Automated mode will produce a slightly larger network, different from that of Qin et al. (2020).
     * Dilation rates of RSU4F layers are fixed to [1, 2, 4, 8].
-    * downsampling is achieved through maxpooling in Qin et al. (2020), 
-      and can be replaced by strided convolutional layers here.
-    * upsampling is achieved through bilinear interpolation in Qin et al. (2020), 
-      and can be replaced by transpose convolutional layers here.
+    * The default output activation is sigmoid, consistent with Qin et al. (2020).
+    * Downsampling is achieved through maxpooling and can be replaced by strided convolutional layers here.
+    * Upsampling is achieved through bilinear interpolation and can be replaced by transpose convolutional layers here.
     
     '''
     
@@ -400,12 +399,14 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
     
     IN = Input(shape=input_size) 
     
+    # backbone (before conv + activation + upsample)
     X_out = u2net_2d_backbone(IN, 
                               filter_num_down, filter_num_up, 
                               filter_mid_num_down, filter_mid_num_up, 
                               filter_4f_num, filter_4f_mid_num, activation=activation, 
                               batch_norm=batch_norm, pool=pool, unpool=unpool, name=name)
     
+    # output layers
     X_out = X_out[::-1]
     L_out = len(X_out)
     
