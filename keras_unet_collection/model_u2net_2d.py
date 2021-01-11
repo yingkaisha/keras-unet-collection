@@ -10,7 +10,7 @@ from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU
 from tensorflow.keras.models import Model
 
 
-def RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True, name='RSU'):
+def RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True, pool=True, unpool=True, name='RSU'):
     '''
     Residual U-blocks (RSU)
     
@@ -29,6 +29,8 @@ def RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True,
         depth: number of down- and upsampling levels
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
         batch_norm: True for batch normalization, False otherwise.
+        pool: True for maxpooling, False for strided convolutional layers.
+        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.  
         name: name of the created keras layers.
         
     Output
@@ -48,8 +50,13 @@ def RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True,
     X_skip.append(X)
     
     for i in range(depth):
-        X = MaxPooling2D(pool_size=(2, 2), name='{}_maxpool_{}'.format(name, i))(X)
-
+        
+        if pool:
+            X = MaxPooling2D(pool_size=(2, 2), name='{}_maxpool_{}'.format(name, i))(X)
+        else:
+            X = stride_conv(X, channel_in, 2, activation=activation, batch_norm=batch_norm, name='{}_stridconv_{}'.format(name, i))
+            
+            
         X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, dilation_rate=1, 
                        activation=activation, batch_norm=batch_norm, name='{}_down_{}'.format(name, i+1))
         X_skip.append(X)
@@ -64,9 +71,12 @@ def RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True,
         X = concatenate([X, X_skip[i]], axis=-1, name='{}_concat_{}'.format(name, i))
         X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, dilation_rate=1, 
                        activation=activation, batch_norm=batch_norm, name='{}_up_{}'.format(name, i+1))
+        if unpool:
+            X = UpSampling2D((2, 2), interpolation='bilinear', name='{}_unpool_{}'.format(name, i))(X)
+        else:
+            X = Conv2DTranspose(channel_in, 3, strides=(2, 2), padding='same', name='{}_trnasconv_{}'.format(name, i))(X)
         
-        X = UpSampling2D((2, 2), interpolation='bilinear', name='{}_unpool_{}'.format(name, i))(X)
-  
+        
     X = concatenate([X, X_skip[depth]], axis=-1, name='{}_concat_out'.format(name))
 
     X = CONV_stack(X, channel_out, kernel_size=3, stack_num=1, dilation_rate=1, 
@@ -131,7 +141,7 @@ def RSU4F(X, channel_in, channel_out, dilation_num=[1, 2, 4, 8], activation='ReL
 
 def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter_mid_num_down='auto', filter_mid_num_up='auto', 
              filter_4f_num='auto', filter_4f_mid_num='auto', activation='ReLU', output_activation='Sigmoid', 
-             batch_norm=False, deep_supervision=False, name='u2net'):
+             batch_norm=False, pool=True, unpool=True, deep_supervision=False, name='u2net'):
     
     '''
     U^2-Net
@@ -181,12 +191,16 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
                            if None is received, then linear activation is applied.
                            
         batch_norm: True for batch normalization.
+        pool: True for maxpooling, False for strided convolutional layers.
+        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.  
         deep_supervision: True for a model that supports deep supervision. Details see Qin et al. (2020).
         name: prefix of the created keras layers.    
     
-    * "auto" mode will produce a slightly larger network, not compateble with Qin et al. (2020). 
-    * downsampling is achieved through maxpooling (Qin et al., 2020).
-    * upsampling is achieved through bilinear interpolation (Qin et al., 2020).
+    * automated mode will produce a slightly larger network, different from that of Qin et al. (2020).
+    * downsampling is achieved through maxpooling in Qin et al. (2020), 
+      and can be replaced by strided convolutional layers here.
+    * upsampling is achieved through bilinear interpolation in Qin et al. (2020), 
+      and can be replaced by transpose convolutional layers here.
     
     '''
     
@@ -232,20 +246,31 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
     IN = Input(shape=input_size) 
     X = IN
     
-    X = RSU(X, filter_mid_num_down[0], filter_num_down[0], depth=depth_+1, 
-            activation=activation, batch_norm=batch_norm, name='{}_in'.format(name))
+    X = RSU(X, filter_mid_num_down[0], filter_num_down[0], depth=depth_+1, activation=activation, 
+            batch_norm=batch_norm, pool=pool, unpool=unpool, name='{}_in'.format(name))
     X_skip.append(X)
     depth_backup.append(depth_+1)
     
     for i, f in enumerate(filter_num_down[1:]):
-        X = MaxPooling2D(pool_size=(2, 2), name='{}_maxpool_{}'.format(name, i))(X)
-        X = RSU(X, filter_mid_num_down[i+1], f, depth=depth_-i, 
-                activation=activation, batch_norm=batch_norm, name='{}_down_{}'.format(name, i))
+        
+        if pool:
+            X = MaxPooling2D(pool_size=(2, 2), name='{}_maxpool_{}'.format(name, i))(X)
+        else:
+            X = stride_conv(X, f, 2, activation=activation, batch_norm=batch_norm, name='{}_stridconv_{}'.format(name, i))
+            
+        X = RSU(X, filter_mid_num_down[i+1], f, depth=depth_-i, activation=activation, 
+                batch_norm=batch_norm, pool=pool, unpool=unpool, name='{}_down_{}'.format(name, i))
+        
         depth_backup.append(depth_-i)
         X_skip.append(X)
 
     for i, f in enumerate(filter_4f_num):
-        X = MaxPooling2D(pool_size=(2, 2), name='{}_maxpool_4f_{}'.format(name, i))(X)
+        
+        if pool:
+            X = MaxPooling2D(pool_size=(2, 2), name='{}_maxpool_4f_{}'.format(name, i))(X)
+        else:
+            X = stride_conv(X, f, 2, activation=activation, batch_norm=batch_norm, name='{}_stridconv_4f_{}'.format(name, i))
+            
         X = RSU4F(X, filter_4f_mid_num[i], f, activation=activation, 
                   batch_norm=batch_norm, name='{}_down_4f_{}'.format(name, i))
         X_skip.append(X)
@@ -264,7 +289,12 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
     
     tensor_count = 0
     for i, f in enumerate(filter_4f_num):
-        X = UpSampling2D((2, 2), interpolation='bilinear', name='{}_unpool_4f_{}'.format(name, i))(X)
+        
+        if unpool:
+            X = UpSampling2D((2, 2), interpolation='bilinear', name='{}_unpool_4f_{}'.format(name, i))(X)
+        else:
+            X = Conv2DTranspose(f, 3, strides=(2, 2), padding='same', name='{}_transconv_4f_{}'.format(name, i))(X)
+        
         X = concatenate([X, X_skip[tensor_count]], axis=-1, name='{}_concat_4f_{}'.format(name, i))
         X = RSU4F(X, filter_4f_mid_num[i], f, activation=activation, 
                   batch_norm=batch_norm, name='{}_up_4f_{}'.format(name, i))
@@ -272,10 +302,15 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
         tensor_count += 1
     
     for i, f in enumerate(filter_num_up):
-        X = UpSampling2D((2, 2), interpolation='bilinear', name='{}_unpool_{}'.format(name, i))(X)
+        
+        if unpool:
+            X = UpSampling2D((2, 2), interpolation='bilinear', name='{}_unpool_{}'.format(name, i))(X)
+        else:
+            X = Conv2DTranspose(f, 3, strides=(2, 2), padding='same', name='{}_transconv_{}'.format(name, i))(X)
+        
         X = concatenate([X, X_skip[tensor_count]], axis=-1, name='{}_concat_{}'.format(name, i))
         X = RSU(X, filter_mid_num_up[i], f, depth=depth_backup[i], 
-                activation=activation, batch_norm=batch_norm, name='{}_up_{}'.format(name, i))
+                activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, name='{}_up_{}'.format(name, i))
         X_out.append(X)
         tensor_count += 1
     
@@ -291,7 +326,11 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
     for i in range(L_out-1):
         pool_size = 2**(i+1)
         X = Conv2D(n_labels, 3, padding='same', name='{}_output_conv_{}'.format(name, i))(X_out[i+1])
-        D = UpSampling2D((pool_size, pool_size), interpolation='bilinear', name='{}_output_sup{}'.format(name, i+1))(X)
+        
+        if unpool:
+            D = UpSampling2D((pool_size, pool_size), interpolation='bilinear', name='{}_output_sup{}'.format(name, i+1))(X)
+        else:
+            D = Conv2DTranspose(f, 3, strides=(pool_size, pool_size), padding='same', name='{}_output_sup{}'.format(name, i+1))(X)
         
         if output_activation:
             if output_activation == 'Sigmoid':
@@ -306,8 +345,9 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
                     name='{}_output_final'.format(name))
     
     if deep_supervision:
+        
         OUT_stack.append(D)
-        print('----------\ndeep_supervision = True\nnames of (ordered) output tensors are listed as follows:')
+        print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows (the last one is final output):')
         
         if output_activation == None:
             for i in range(L_out):
