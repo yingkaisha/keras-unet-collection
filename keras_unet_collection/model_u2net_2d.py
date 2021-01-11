@@ -227,12 +227,12 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
         filter_4f_mid_num = [num//2 for num in filter_4f_num]
         
     if verbose:
-        print('"auto" mode is applied with the following details:\n----------')
-        print('\tNumber of RSU outer channels within downsampling blocks: filter_num_down = {}'.format(filter_num_down))
+        print('Automated hyper-parameter determination is applied with the following details:\n----------')
+        print('\tNumber of RSU output channels within downsampling blocks: filter_num_down = {}'.format(filter_num_down))
         print('\tNumber of RSU intermediate channels within downsampling blocks: filter_mid_num_down = {}'.format(filter_mid_num_down))
-        print('\tNumber of RSU outer channels within upsampling blocks: filter_num_up = {}'.format(filter_num_up))
+        print('\tNumber of RSU output channels within upsampling blocks: filter_num_up = {}'.format(filter_num_up))
         print('\tNumber of RSU intermediate channels within upsampling blocks: filter_mid_num_up = {}'.format(filter_mid_num_up))        
-        print('\tNumber of RSU-4F outer channels within downsampling and bottom blocks: filter_4f_num = {}'.format(filter_4f_num))
+        print('\tNumber of RSU-4F output channels within downsampling and bottom blocks: filter_4f_num = {}'.format(filter_4f_num))
         print('\tNumber of RSU-4F intermediate channels within downsampling and bottom blocks: filter_4f_num = {}'.format(filter_4f_mid_num))
         print('----------\nExplicitly specifying keywords listed above if their "auto" settings do not satisfy your needs')
         
@@ -347,7 +347,7 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
     if deep_supervision:
         
         OUT_stack.append(D)
-        print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows (the last one is final output):')
+        print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows (the last one is the final output):')
         
         if output_activation == None:
             for i in range(L_out):

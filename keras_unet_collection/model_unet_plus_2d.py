@@ -90,7 +90,7 @@ def unet_plus_2d(input_size, filter_num, n_labels,
     if deep_supervision:
         
         OUT_list = []
-        print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows (the last one is final output):')
+        print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows (the last one is the final output):')
         
         for i in range(1, depth_):
             print('\t{}_output_sup{}'.format(name, i))
