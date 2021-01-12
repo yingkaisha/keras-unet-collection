@@ -22,7 +22,7 @@ The `tensorflow.keras` implementation of U-net, U-net++, R2U-net, Attention U-ne
 
 ----------
 
-` keras_unet_collection.backbones` contains functions that build the backone of Unet variants for model customization, evaluation, and debugging.
+` keras_unet_collection.backbones` contains functions that build the backone of Unet variants for model customization and debugging.
 
 | ` keras_unet_collection.backbones` | Notes |
 |:-----------------------------------|:------|
