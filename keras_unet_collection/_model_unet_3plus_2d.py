@@ -30,10 +30,11 @@ def unet_3plus_2d_backbone(input_tensor, filter_num_down, filter_num_skip, filte
         input_tensor: the input tensor of the backbone, e.g., keras.layers.Inpyt((None, None, 3))
         
         filter_num_down: an iterable that defines the number of RSU output filters for each 
-                         downsampling level. E.g., [64, 128, 256, 512]
+                         downsampling level. E.g., [64, 128, 256, 512, 1024]
                          the network depth is expected as `len(filter_num_down)`
         filter_num_skip: an iterable that defines the number of convolution filters after each 
-                         full-scale skip connection. 
+                         full-scale skip connection. Number of elements is expected to be `depth-1`.
+                         i.e., the bottom level is not included.
                          * Huang et al. (2020) applied the same numbers for all levels. 
                            E.g., [64, 64, 64, 64]
         filter_num_aggregate: an int that defines the number of channels of full-scale aggregations.
@@ -42,7 +43,7 @@ def unet_3plus_2d_backbone(input_tensor, filter_num_down, filter_num_skip, filte
         activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., ReLU                
         batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
-        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.  
+        unpool: True for unpooling with bilinear interpolation, False for transpose convolutional layers.  
         name: prefix of the created keras layers.    
 
     * Downsampling is achieved through maxpooling and can be replaced by strided convolutional layers here.
@@ -180,15 +181,13 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
         input_size: a tuple that defines the shape of input, e.g., (None, None, 3)
         
         filter_num_down: an iterable that defines the number of RSU output filters for each 
-                         downsampling level. E.g., [64, 128, 256, 512]
+                         downsampling level. E.g., [64, 128, 256, 512, 1024]
                          the network depth is expected as `len(filter_num_down)`
-               
         filter_num_skip: an iterable that defines the number of convolution filters after each 
-                         full-scale skip connection. 
+                         full-scale skip connection. Number of elements is expected to be `depth-1`.
+                         i.e., the bottom level is not included.
                          * Huang et al. (2020) applied the same numbers for all levels. 
                            E.g., [64, 64, 64, 64]
-
-                             
         filter_num_aggregate: an int that defines the number of channels of full-scale aggregations.
               
         stack_num_down: number of convolutional layers per downsampling level/block. 
@@ -201,7 +200,7 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
                            
         batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
-        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.  
+        unpool: True for unpooling with bilinear interpolation, False for transpose convolutional layers.
         deep_supervision: True for a model that supports deep supervision. Details see Huang et al. (2020).
         name: prefix of the created keras layers.    
     
