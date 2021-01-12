@@ -113,10 +113,10 @@ def resunet_a_2d_backbone(input_tensor, filter_num, dilation_num,
     Input
     ----------
         input_tensor: the input tensor of the backbone, e.g., keras.layers.Inpyt((128, 128, 3))
-        filter_num: an iterable that defines number of filters for each \
+        filter_num: an iterable that defines the number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(filter_num)`
-        dilation_num: an iterable that defines dilation rates of convolutional layers.
+        dilation_num: an iterable that defines the dilation rates of convolutional layers.
                       Diakogiannis et al. (2020) suggested [1, 3, 15, 31].
                       *This backbone function requires `len(filter_num) == len(dilation_num)`.
                        Explicitly defining dilation rates for each down-/upsampling level.
@@ -207,10 +207,10 @@ def resunet_a_2d(input_size, filter_num, dilation_num, n_labels,
     Input
     ----------
         input_size: a tuple that defines the shape of input, e.g., (None, None, 3)
-        filter_num: an iterable that defines number of filters for each \
+        filter_num: an iterable that defines the number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(filter_num)`
-        dilation_num: an iterable that defines dilation rates of convolutional layers.
+        dilation_num: an iterable that defines the dilation rates of convolutional layers.
                       Diakogiannis et al. (2020) suggested [1, 3, 15, 31]
                       * `dilation_num` can be provided as 2d iterables, with the second dimension matches 
                       the model depth. e.g., for len(filter_num) = 4; dilation_num can be provided as: 

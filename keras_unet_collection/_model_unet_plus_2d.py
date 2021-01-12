@@ -27,7 +27,7 @@ def unet_plus_2d_backbone(input_tensor, filter_num, stack_num_down=2, stack_num_
     Input
     ----------
         input_tensor: the input tensor of the backbone, e.g., keras.layers.Inpyt((None, None, 3))
-        filter_num: an iterable that defines number of filters for each \
+        filter_num: an iterable that defines the number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(filter_num)`
         stack_num_down: number of convolutional layers per downsampling level/block. 
@@ -116,7 +116,7 @@ def unet_plus_2d(input_size, filter_num, n_labels,
     Input
     ----------
         input_size: a tuple that defines the shape of input, e.g., (None, None, 3)
-        filter_num: an iterable that defines number of filters for each
+        filter_num: an iterable that defines the number of filters for each
                     down- and upsampling level. E.g., [64, 128, 256, 512]
                     the depth is expected as `len(filter_num)`
         n_labels: number of output labels.
