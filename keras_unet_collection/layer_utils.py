@@ -2,7 +2,6 @@
 from __future__ import absolute_import
 
 from keras_unet_collection.activations import GELU, Snake
-from tensorflow import shape as tf_shape
 from tensorflow import expand_dims
 from tensorflow.compat.v1 import image
 from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Conv2DTranspose, GlobalAveragePooling2D, DepthwiseConv2D, Lambda
