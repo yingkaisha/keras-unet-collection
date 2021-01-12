@@ -4,9 +4,11 @@
 [![PyPI license](https://img.shields.io/pypi/l/keras-unet-collection.svg)](https://pypi.org/project/keras-unet-collection/)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/yingkaisha/keras-unet-collection/graphs/commit-activity)
 
-This project contains `tensorflow.keras` implementations of U-net, U-net++, R2U-net, Attention U-net, ResUnet-a, U^2-Net, and UNET 3+.
+The `tensorflow.keras` implementation of U-net, U-net++, R2U-net, Attention U-net, ResUnet-a, U^2-Net, and UNET 3+.
 
 ----------
+
+`keras_unet_collection.models` contains functions that configure keras models with user-specific hyper-parameter options, including network depth, hidden layer activations and batch normalization for all the U-net variants, and deep supervision for U-net++, U^2-Net and UNET 3+. See the [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb) for more details.
 
 | `keras_unet_collection.models`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Name | Reference |
 |:---------------|:----------------|:----------------|
@@ -20,16 +22,17 @@ This project contains `tensorflow.keras` implementations of U-net, U-net++, R2U-
 
 ----------
 
+` keras_unet_collection.backbones` contains functions that build the backone of Unet variants for model customization, evaluation, and debugging.
+
 | ` keras_unet_collection.backbones` | Notes |
 |:-----------------------------------|:------|
-| `unet_2d_backbone`, `unet_plus_2d_backbone`, `r2_unet_2d_backbone`, `att_unet_2d_backbone`, `resunet_a_2d_backbone`, `u2net_2d_backbone`, `unet_3plus_2d_backbone` | Functions that accept an input tensor and hyper-parameters of the corresponded model, and produce output tensors of the backbone (i.e., the majority part of the hidden layers).<br />These functions are used for model customization, evaluation, and debugging. |
-
-These model and backbone functions support user-friendly hyper-parameter options, including network depth, hidden layer activations and batch normalization for all the U-net variants, and deep supervision for U-net++, U^2-Net and UNET 3+. See the [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb) for more details.
+| `unet_2d_backbone`, `unet_plus_2d_backbone`, `r2_unet_2d_backbone`, `att_unet_2d_backbone`, `resunet_a_2d_backbone`, `u2net_2d_backbone`, `unet_3plus_2d_backbone` | Functions that accept an input tensor and hyper-parameters of the corresponded model, and produce output tensors of the backbone. |
 
 ----------
-This project also provides additional activation layers and loss functions:
 
-| ` keras_unet_collection.activations` | Name | Reference |
+`keras_unet_collection.activations` and `keras_unet_collection.losses` provide additional activation layers and loss functions.
+
+| `keras_unet_collection.activations` | Name | Reference |
 |:--------|:----------------|:----------------|
 | `GELU`  | Gaussian Error Linear Units (GELU)   | [Hendrycks et al. (2016)](https://arxiv.org/abs/1606.08415) |
 | `Snake` | Snake activation                     | [Liu et al. (2020)](https://arxiv.org/abs/2006.08195) |
