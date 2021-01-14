@@ -8,3 +8,4 @@
 | 0.0.6    | 2021-01-10    | (1) New feature. Deep supervision for Unet++.<br />(2) New feature. Conv-based down- and upsampling for U^2-Net. |
 | 0.0.7    | 2021-01-12    | (1) Bug fix.<br /> (2) New feature. backbone functions.<br />(3) New feature. UNET 3+. |
 | 0.0.8    | 2021-01-13    | Bug fix. |
+| 0.0.9    | 2021-01-14    | (1) New feature. two util functions.<br />(2) Documentation. UNET 3+ image segmentation. |
