@@ -7,3 +7,4 @@
 | 0.0.5    | 2021-01-06    | (1) Bug and typo fixes.<br />(2) File structure changes.<br />(3) New feature. U^2-Net.<br />(4) New feature. Sigmoid output activation. |
 | 0.0.6    | 2021-01-10    | (1) New feature. Deep supervision for Unet++.<br />(2) New feature. Conv-based down- and upsampling for U^2-Net. |
 | 0.0.7    | 2021-01-12    | (1) Bug fix.<br /> (2) New feature. backbone functions.<br />(3) New feature. UNET 3+. |
+| 0.0.8    | 2021-01-13    | Bug fix. |
