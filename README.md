@@ -8,7 +8,7 @@ The `tensorflow.keras` implementation of U-net, U-net++, R2U-net, Attention U-ne
 
 ----------
 
-`keras_unet_collection.models` contains functions that configure keras models with user-specific hyper-parameter options, including network depth, hidden layer activations and batch normalization for all the U-net variants, and deep supervision for U-net++, U^2-Net and UNET 3+. See the [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb) for more details.
+`keras_unet_collection.models` contains functions that configure keras models with user-specific hyper-parameter options, including network depth, hidden layer activations and batch normalization for all the U-net variants, and deep supervision for U-net++, U^2-Net and UNET 3+. See the [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/user_guid_models.ipynb) for more details.
 
 | `keras_unet_collection.models`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Name | Reference |
 |:---------------|:----------------|:----------------|
@@ -62,7 +62,7 @@ from keras_unet_collection import models
 
 * **Note**: Because of the changable hyper-parameter options, neural networks produced by this package may not be compatible with other pre-trained models of the same name. Training from scratch is recommended.
 
-* Jupyter notebooks are provided as [user guides](https://github.com/yingkaisha/keras-unet-collection/blob/main/user_guid.ipynb).
+* Jupyter notebooks are provided as [examples](https://github.com/yingkaisha/keras-unet-collection/tree/main/examples).
 
 * [Changelog](https://github.com/yingkaisha/keras-unet-collection/blob/main/CHANGELOG.md)
 
