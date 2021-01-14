@@ -241,10 +241,10 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
     X_decoder = unet_3plus_2d_backbone(IN, filter_num_down, filter_num_skip, filter_num_aggregate, 
                                        stack_num_down=stack_num_down, stack_num_up=stack_num_up, activation=activation, 
                                        batch_norm=batch_norm, pool=pool, unpool=unpool, name=name)
+    X_decoder = X_decoder[::-1]
+    
     if deep_supervision:
-
         OUT_stack = []
-        X_decoder = X_decoder[::-1]
         L_out = len(X_decoder)
         
         print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows (the last one is the final output):')
@@ -279,7 +279,7 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
             OUT_stack.append(X)
 
         OUT_stack.append(
-            CONV_output(X_decoder[-1], n_labels, kernel_size=3, 
+            CONV_output(X_decoder[0], n_labels, kernel_size=3, 
                         activation=activation, name='{}_output_final'.format(name)))
         if output_activation:
             print('\t{}_output_final_activation'.format(name))
@@ -289,7 +289,7 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
         model = Model([IN,], OUT_stack)
 
     else:
-        OUT = CONV_output(X_decoder[-1], n_labels, kernel_size=3, 
+        OUT = CONV_output(X_decoder[0], n_labels, kernel_size=3, 
                           activation=activation, name='{}_output_final'.format(name))
 
         model = Model([IN,], [OUT,])
