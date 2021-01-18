@@ -96,15 +96,15 @@ def ResUNET_a_right(X, X_list, channel, kernel_size=3, dilation_num=[1,],
      
     return X
 
-def resunet_a_2d_backbone(input_tensor, filter_num, dilation_num,
-                          aspp_num_down=256, aspp_num_up=128, activation='ReLU',
-                          batch_norm=True, unpool=True, name='resunet'):
+def resunet_a_2d_base(input_tensor, filter_num, dilation_num,
+                      aspp_num_down=256, aspp_num_up=128, activation='ReLU',
+                      batch_norm=True, unpool=True, name='resunet'):
     '''
-    The backbone of ResUNet-a
+    The base of ResUNet-a
     
-    resunet_a_2d_backbone(input_tensor, filter_num, dilation_num,
-                          aspp_num_down=256, aspp_num_up=128, activation='ReLU',
-                          batch_norm=True, unpool=True, name='resunet')
+    resunet_a_2d_base(input_tensor, filter_num, dilation_num,
+                      aspp_num_down=256, aspp_num_up=128, activation='ReLU',
+                      batch_norm=True, unpool=True, name='resunet')
                           
     ----------
     Diakogiannis, F.I., Waldner, F., Caccetta, P. and Wu, C., 2020. Resunet-a: a deep learning framework for 
@@ -112,13 +112,13 @@ def resunet_a_2d_backbone(input_tensor, filter_num, dilation_num,
     
     Input
     ----------
-        input_tensor: the input tensor of the backbone, e.g., keras.layers.Inpyt((128, 128, 3))
+        input_tensor: the input tensor of the base, e.g., keras.layers.Inpyt((128, 128, 3))
         filter_num: an iterable that defines the number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(filter_num)`
         dilation_num: an iterable that defines the dilation rates of convolutional layers.
                       Diakogiannis et al. (2020) suggested [1, 3, 15, 31].
-                      *This backbone function requires `len(filter_num) == len(dilation_num)`.
+                      *This base function requires `len(filter_num) == len(dilation_num)`.
                        Explicitly defining dilation rates for each down-/upsampling level.
         aspp_num_down: number of Atrous Spatial Pyramid Pooling (ASPP) layer filters after the last downsampling block.
         aspp_num_up: number of ASPP layer filters after the last upsampling block.                 
@@ -129,10 +129,10 @@ def resunet_a_2d_backbone(input_tensor, filter_num, dilation_num,
         
     Output
     ----------
-        X: the output tensor of the backbone.
+        X: the output tensor of the base.
         
     * downsampling is achieved through strided convolutional layers (Diakogiannis et al., 2020).
-    * If this backbone function is involved in network training, then the input shape cannot have NoneType.
+    * If this base function is involved in network training, then the input shape cannot have NoneType.
     * `dilation_num` should be provided as 2d iterables, with the second dimension matches the model depth.
       e.g., for len(filter_num) = 4; dilation_num can be provided as: [[1, 3, 15, 31], [1, 3, 15], [1,], [1,]]
       
@@ -144,9 +144,9 @@ def resunet_a_2d_backbone(input_tensor, filter_num, dilation_num,
     X_skip = []
     
     # ----- #
-    # rejecting auto-mode from this backbone function
+    # rejecting auto-mode from this base function
     if isinstance(dilation_num[0], int):
-        raise ValueError('`resunet_a_2d_backbone` does not support automated determination of `dilation_num`.')
+        raise ValueError('`resunet_a_2d_base` does not support automated determination of `dilation_num`.')
     else:
         dilation_ = dilation_num
     # ----- #
@@ -272,10 +272,10 @@ def resunet_a_2d(input_size, filter_num, dilation_num, n_labels,
     
     IN = Input(input_size)
     
-    # backbone
-    X = resunet_a_2d_backbone(IN, filter_num, dilation_,
-                              aspp_num_down=aspp_num_down, aspp_num_up=aspp_num_up, activation=activation,
-                              batch_norm=batch_norm, unpool=unpool, name=name)
+    # base
+    X = resunet_a_2d_base(IN, filter_num, dilation_,
+                          aspp_num_down=aspp_num_down, aspp_num_up=aspp_num_up, activation=activation,
+                          batch_norm=batch_norm, unpool=unpool, name=name)
     
     OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
 

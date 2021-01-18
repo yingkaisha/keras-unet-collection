@@ -9,14 +9,14 @@ from tensorflow.keras.layers import BatchNormalization, Activation, concatenate,
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU
 from tensorflow.keras.models import Model
 
-def unet_2d_backbone(input_tensor, filter_num, 
-                     stack_num_down=2, stack_num_up=2, activation='ReLU', 
-                     batch_norm=False, pool=True, unpool=True, name='unet'):
+def unet_2d_base(input_tensor, filter_num, 
+                 stack_num_down=2, stack_num_up=2, activation='ReLU', 
+                 batch_norm=False, pool=True, unpool=True, name='unet'):
     
     '''
-    The backbone of U-net
+    The base of U-net
     
-    unet_2d_backbone(input_tensor, filter_num, 
+    unet_2d_base(input_tensor, filter_num, 
                      stack_num_down=2, stack_num_up=2, activation='ReLU', 
                      batch_norm=False, pool=True, unpool=True, name='unet')
     
@@ -26,7 +26,7 @@ def unet_2d_backbone(input_tensor, filter_num,
     
     Input
     ----------
-        input_tensor: the input tensor of the backbone, e.g., keras.layers.Inpyt((None, None, 3))
+        input_tensor: the input tensor of the base, e.g., keras.layers.Inpyt((None, None, 3))
         filter_num: an iterable that defines the number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(filter_num)`
@@ -40,7 +40,7 @@ def unet_2d_backbone(input_tensor, filter_num,
         
     Output
     ----------
-        X: the output tensor of the backbone. 
+        X: the output tensor of the model base. 
     
     '''
     
@@ -108,9 +108,9 @@ def unet_2d(input_size, filter_num, n_labels,
 
     IN = Input(input_size)
     
-    # backbone
-    X = unet_2d_backbone(IN, filter_num, stack_num_down=stack_num_down, stack_num_up=stack_num_up, 
-                         activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, name=name)
+    # base
+    X = unet_2d_base(IN, filter_num, stack_num_down=stack_num_down, stack_num_up=stack_num_up, 
+                     activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, name=name)
     # output layer
     OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
     

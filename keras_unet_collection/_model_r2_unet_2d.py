@@ -157,14 +157,14 @@ def UNET_RR_right(X, X_list, channel, kernel_size=3,
     
     return H
 
-def r2_unet_2d_backbone(input_tensor, filter_num, stack_num_down=2, stack_num_up=2, recur_num=2,
-                        activation='ReLU', batch_norm=False, pool=True, unpool=True, name='res_unet'):
+def r2_unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2, recur_num=2,
+                    activation='ReLU', batch_norm=False, pool=True, unpool=True, name='res_unet'):
     
     '''
-    The backbone of Recurrent Residual (R2) U-Net
+    The base of Recurrent Residual (R2) U-Net
     
-    r2_unet_2d_backbone(input_tensor, filter_num, stack_num_down=2, stack_num_up=2, recur_num=2,
-                        activation='ReLU', batch_norm=False, pool=True, unpool=True, name='res_unet')
+    r2_unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2, recur_num=2,
+                    activation='ReLU', batch_norm=False, pool=True, unpool=True, name='res_unet')
     
     ----------
     Alom, M.Z., Hasan, M., Yakopcic, C., Taha, T.M. and Asari, V.K., 2018. Recurrent residual convolutional neural network 
@@ -172,7 +172,7 @@ def r2_unet_2d_backbone(input_tensor, filter_num, stack_num_down=2, stack_num_up
     
     Input
     ----------
-        input_tensor: the input tensor of the backbone, e.g., keras.layers.Inpyt((None, None, 3))
+        input_tensor: the input tensor of the base, e.g., keras.layers.Inpyt((None, None, 3))
         filter_num: an iterable that defines the number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(filter_num)`
@@ -187,7 +187,7 @@ def r2_unet_2d_backbone(input_tensor, filter_num, stack_num_down=2, stack_num_up
         
     Output
     ----------
-        X: the output tensor of the backbone.
+        X: the output tensor of the base.
     
     '''
     
@@ -261,10 +261,10 @@ def r2_unet_2d(input_size, filter_num, n_labels,
 
     IN = Input(input_size, name='{}_input'.format(name))
 
-    # backbone
-    X = r2_unet_2d_backbone(IN, filter_num, 
-                            stack_num_down=stack_num_down, stack_num_up=stack_num_up, recur_num=recur_num,
-                            activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, name=name)
+    # base
+    X = r2_unet_2d_base(IN, filter_num, 
+                        stack_num_down=stack_num_down, stack_num_up=stack_num_up, recur_num=recur_num,
+                        activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, name=name)
     # output layer
     OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
     

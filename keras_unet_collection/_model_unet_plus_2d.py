@@ -9,15 +9,15 @@ from tensorflow.keras.layers import BatchNormalization, Activation, concatenate,
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU
 from tensorflow.keras.models import Model
 
-def unet_plus_2d_backbone(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
-                          activation='ReLU', batch_norm=False, pool=True, unpool=True, 
-                          deep_supervision=False, name='xnet'):
+def unet_plus_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
+                      activation='ReLU', batch_norm=False, pool=True, unpool=True, 
+                      deep_supervision=False, name='xnet'):
     '''
-    The backbone of U-net++
+    The base of U-net++
     
-    unet_plus_2d_backbone(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
-                          activation='ReLU', batch_norm=False, pool=True, unpool=True, 
-                          deep_supervision=False, name='xnet')
+    unet_plus_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
+                      activation='ReLU', batch_norm=False, pool=True, unpool=True, 
+                      deep_supervision=False, name='xnet')
     
     ----------
     Zhou, Z., Siddiquee, M.M.R., Tajbakhsh, N. and Liang, J., 2018. Unet++: A nested u-net architecture 
@@ -26,7 +26,7 @@ def unet_plus_2d_backbone(input_tensor, filter_num, stack_num_down=2, stack_num_
     
     Input
     ----------
-        input_tensor: the input tensor of the backbone, e.g., keras.layers.Inpyt((None, None, 3))
+        input_tensor: the input tensor of the base, e.g., keras.layers.Inpyt((None, None, 3))
         filter_num: an iterable that defines the number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(filter_num)`
@@ -45,7 +45,7 @@ def unet_plus_2d_backbone(input_tensor, filter_num, stack_num_down=2, stack_num_
         If deep_supervision = True; Then the output is a list of tensors 
             with the first tensor obtained from the first downsampling level (for checking the input/output shapes only),
             the second to the `depth-1`-th tensors obtained from each intermediate upsampling levels (deep supervision tensors),
-            and the last tensor obtained from the end of the backbone.
+            and the last tensor obtained from the end of the base.
     
     '''
     
@@ -142,15 +142,15 @@ def unet_plus_2d(input_size, filter_num, n_labels,
     
     IN = Input(input_size)
     
-    # backbone
-    X = unet_plus_2d_backbone(IN, filter_num, stack_num_down=stack_num_down, stack_num_up=stack_num_up,
-                              activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, 
-                              deep_supervision=deep_supervision, name=name)
+    # base
+    X = unet_plus_2d_base(IN, filter_num, stack_num_down=stack_num_down, stack_num_up=stack_num_up,
+                          activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, 
+                          deep_supervision=deep_supervision, name=name)
     
     # output
     if deep_supervision:
         
-        # backbone returns a list of tensors
+        # model base returns a list of tensors
         X_list = X
         OUT_list = []
         

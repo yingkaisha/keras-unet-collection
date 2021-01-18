@@ -97,7 +97,7 @@ def vnet_2d_base(input_tensor, filter_num, res_num_ini=1, res_num_max=3,
     
     Input
     ----------
-        input_tensor: the input tensor of the backbone, e.g., keras.layers.Inpyt((None, None, 3))
+        input_tensor: the input tensor of the base, e.g., keras.layers.Inpyt((None, None, 3))
         filter_num: an iterable that defines the number of filters for each \
                     down- and upsampling level. E.g., [64, 128, 256, 512]
                     the depth is expected as `len(filter_num)`   
@@ -172,7 +172,7 @@ def vnet_2d(input_size, filter_num, n_labels,
     
     Input
     ----------
-        input_tensor: the input tensor of the backbone, e.g., keras.layers.Inpyt((None, None, 3))
+        input_tensor: the input tensor of the base, e.g., keras.layers.Inpyt((None, None, 3))
         filter_num: an iterable that defines the number of filters for each \
                     down- and upsampling level. E.g., [64, 128, 256, 512]
                     the depth is expected as `len(filter_num)`

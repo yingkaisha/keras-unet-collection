@@ -139,20 +139,20 @@ def RSU4F(X, channel_in, channel_out, dilation_num=[1, 2, 4, 8], activation='ReL
     
     return add([X, X_skip[-1]], name='{}_out_add'.format(name))
 
-def u2net_2d_backbone(input_tensor, 
+def u2net_2d_base(input_tensor, 
                       filter_num_down, filter_num_up, 
                       filter_mid_num_down, filter_mid_num_up, 
                       filter_4f_num, filter_4f_mid_num, activation='ReLU',
                       batch_norm=False, pool=True, unpool=True, name='u2net'):
     
     '''
-    The backbone of U^2-Net
+    The base of U^2-Net
     
-    u2net_2d_backbone(input_tensor, 
-                      filter_num_down, filter_num_up, 
-                      filter_mid_num_down, filter_mid_num_up, 
-                      filter_4f_num, filter_4f_mid_num, activation='ReLU',
-                      batch_norm=False, pool=True, unpool=True, name='u2net')
+    u2net_2d_base(input_tensor, 
+                  filter_num_down, filter_num_up, 
+                  filter_mid_num_down, filter_mid_num_up, 
+                  filter_4f_num, filter_4f_mid_num, activation='ReLU',
+                  batch_norm=False, pool=True, unpool=True, name='u2net')
     
     ----------
     Qin, X., Zhang, Z., Huang, C., Dehghan, M., Zaiane, O.R. and Jagersand, M., 2020. 
@@ -161,7 +161,7 @@ def u2net_2d_backbone(input_tensor,
     
     Input
     ----------
-        input_tensor: the input tensor of the backbone, e.g., keras.layers.Inpyt((None, None, 3))
+        input_tensor: the input tensor of the base, e.g., keras.layers.Inpyt((None, None, 3))
         
         filter_num_down: an iterable that defines the number of RSU output filters for each 
                          downsampling level. E.g., [64, 128, 256, 512]
@@ -385,12 +385,12 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
     
     IN = Input(shape=input_size) 
     
-    # backbone (before conv + activation + upsample)
-    X_out = u2net_2d_backbone(IN, 
-                              filter_num_down, filter_num_up, 
-                              filter_mid_num_down, filter_mid_num_up, 
-                              filter_4f_num, filter_4f_mid_num, activation=activation, 
-                              batch_norm=batch_norm, pool=pool, unpool=unpool, name=name)
+    # base (before conv + activation + upsample)
+    X_out = u2net_2d_base(IN, 
+                          filter_num_down, filter_num_up, 
+                          filter_mid_num_down, filter_mid_num_up, 
+                          filter_4f_num, filter_4f_mid_num, activation=activation, 
+                          batch_norm=batch_norm, pool=pool, unpool=unpool, name=name)
     
     # output layers
     X_out = X_out[::-1]

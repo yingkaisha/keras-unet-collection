@@ -9,15 +9,15 @@ from tensorflow.keras.layers import BatchNormalization, Activation, concatenate,
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU
 from tensorflow.keras.models import Model
 
-def unet_3plus_2d_backbone(input_tensor, filter_num_down, filter_num_skip, filter_num_aggregate, 
-                           stack_num_down=2, stack_num_up=1, activation='ReLU', 
-                           batch_norm=False, pool=True, unpool=True, name='unet3plus'):
+def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_num_aggregate, 
+                       stack_num_down=2, stack_num_up=1, activation='ReLU', 
+                       batch_norm=False, pool=True, unpool=True, name='unet3plus'):
     '''
-    The backbone of U-net+++
+    The base of U-net+++
     
-    unet_3plus_2d_backbone(input_tensor, filter_num_down, filter_num_skip, filter_num_aggregate, 
-                           stack_num_down=2, stack_num_up=1, activation='ReLU', 
-                           batch_norm=False, pool=True, unpool=True, name='unet3plus')
+    unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_num_aggregate, 
+                       stack_num_down=2, stack_num_up=1, activation='ReLU', 
+                       batch_norm=False, pool=True, unpool=True, name='unet3plus')
                   
     ----------
     Huang, H., Lin, L., Tong, R., Hu, H., Zhang, Q., Iwamoto, Y., Han, X., Chen, Y.W. and Wu, J., 2020. 
@@ -27,7 +27,7 @@ def unet_3plus_2d_backbone(input_tensor, filter_num_down, filter_num_skip, filte
     
     Input
     ----------
-        input_tensor: the input tensor of the backbone, e.g., keras.layers.Inpyt((None, None, 3))
+        input_tensor: the input tensor of the base model, e.g., keras.layers.Inpyt((None, None, 3))
         
         filter_num_down: an iterable that defines the number of RSU output filters for each 
                          downsampling level. E.g., [64, 128, 256, 512, 1024]
@@ -238,9 +238,9 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
 
     IN = Input(input_size)
 
-    X_decoder = unet_3plus_2d_backbone(IN, filter_num_down, filter_num_skip, filter_num_aggregate, 
-                                       stack_num_down=stack_num_down, stack_num_up=stack_num_up, activation=activation, 
-                                       batch_norm=batch_norm, pool=pool, unpool=unpool, name=name)
+    X_decoder = unet_3plus_2d_base(IN, filter_num_down, filter_num_skip, filter_num_aggregate, 
+                                   stack_num_down=stack_num_down, stack_num_up=stack_num_up, activation=activation, 
+                                   batch_norm=batch_norm, pool=pool, unpool=unpool, name=name)
     X_decoder = X_decoder[::-1]
     
     if deep_supervision:

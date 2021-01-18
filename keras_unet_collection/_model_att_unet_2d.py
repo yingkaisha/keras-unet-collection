@@ -66,15 +66,15 @@ def UNET_att_right(X, X_left, channel, att_channel, kernel_size=3, stack_num=2,
     
     return H
 
-def att_unet_2d_backbone(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
-                         activation='ReLU', atten_activation='ReLU', attention='add',
-                         batch_norm=False, pool=True, unpool=True, name='att-unet'):
+def att_unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
+                     activation='ReLU', atten_activation='ReLU', attention='add',
+                     batch_norm=False, pool=True, unpool=True, name='att-unet'):
     '''
-    The backbone of Attention U-net
+    The base of Attention U-net
     
-    att_unet_2d_backbone(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
-                         activation='ReLU', atten_activation='ReLU', attention='add',
-                         batch_norm=False, pool=True, unpool=True, name='att-unet')
+    att_unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
+                     activation='ReLU', atten_activation='ReLU', attention='add',
+                     batch_norm=False, pool=True, unpool=True, name='att-unet')
                 
     ----------
     Oktay, O., Schlemper, J., Folgoc, L.L., Lee, M., Heinrich, M., Misawa, K., Mori, K., McDonagh, S., Hammerla, N.Y., Kainz, B. 
@@ -82,7 +82,7 @@ def att_unet_2d_backbone(input_tensor, filter_num, stack_num_down=2, stack_num_u
     
     Input
     ----------
-        input_tensor: the input tensor of the backbone, e.g., keras.layers.Inpyt((None, None, 3))
+        input_tensor: the input tensor of the base, e.g., keras.layers.Inpyt((None, None, 3))
         filter_num: an iterable that defines the number of filters for each \
                       down- and upsampling level. E.g., [64, 128, 256, 512]
                       the depth is expected as `len(filter_num)`
@@ -100,7 +100,7 @@ def att_unet_2d_backbone(input_tensor, filter_num, stack_num_down=2, stack_num_u
         
     Output
     ----------
-        X: the output tensor of the backbone.
+        X: the output tensor of the base.
     
     '''
     
@@ -176,10 +176,10 @@ def att_unet_2d(input_size, filter_num, n_labels,
     
     IN = Input(input_size)
     
-    # backbone
-    X = att_unet_2d_backbone(IN, filter_num, stack_num_down=stack_num_down, stack_num_up=stack_num_up,
-                             activation=activation, atten_activation=atten_activation, attention=attention,
-                             batch_norm=batch_norm, pool=pool, unpool=unpool, name=name)
+    # base
+    X = att_unet_2d_base(IN, filter_num, stack_num_down=stack_num_down, stack_num_up=stack_num_up,
+                         activation=activation, atten_activation=atten_activation, attention=attention,
+                         batch_norm=batch_norm, pool=pool, unpool=unpool, name=name)
     
     # output layer
     OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
