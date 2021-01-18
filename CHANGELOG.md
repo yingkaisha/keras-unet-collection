@@ -3,9 +3,10 @@
 |:--------:|:-------------:|:-------- |
 | 0.0.2    | 2020-12-30    | (1) CRPS loss function.<br />(2) Semi-hard triplet loss function.<br />(3) Fixing user specified names on keras models. |
 | 0.0.3    | 2021-01-01    | (1) Bug fix.<br />(2) keyword and documentation fixes for R2U-Net. |
-| 0.0.4    | 2021-01-04    | (1) Bug fix.<br /> (2) New feature. ResUnet-a implementation.<br />(3) New feature. Tversky loss<br />(4) New feature. GELU and Snake activation layers. |
+| 0.0.4    | 2021-01-04    | (1) Bug fix.<br />(2) New feature. ResUnet-a implementation.<br />(3) New feature. Tversky loss<br />(4) New feature. GELU and Snake activation layers. |
 | 0.0.5    | 2021-01-06    | (1) Bug and typo fixes.<br />(2) File structure changes.<br />(3) New feature. U^2-Net.<br />(4) New feature. Sigmoid output activation. |
 | 0.0.6    | 2021-01-10    | (1) New feature. Deep supervision for Unet++.<br />(2) New feature. Conv-based down- and upsampling for U^2-Net. |
-| 0.0.7    | 2021-01-12    | (1) Bug fix.<br /> (2) New feature. backbone functions.<br />(3) New feature. UNET 3+. |
+| 0.0.7    | 2021-01-12    | (1) Bug fix.<br />(2) New feature. backbone functions.<br />(3) New feature. UNET 3+. |
 | 0.0.8    | 2021-01-13    | Bug fix. |
 | 0.0.9    | 2021-01-14    | (1) New feature. two util functions.<br />(2) Documentation. UNET 3+ image segmentation. |
+| 0.0.10   | 2021-01-18    | (1) Bug fixes.<br />(2) Rename the `backbone` module as `base`.<br />(3) New documentation.<br />(4) New feature. 2-d V-net. |
