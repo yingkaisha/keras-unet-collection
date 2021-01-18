@@ -88,9 +88,9 @@ def vnet_2d_base(input_tensor, filter_num, res_num_ini=1, res_num_max=3,
     '''
     The base layers of vnet 2d
     
-    Milletari, F., Navab, N., Ahmadi, S.A.V. and V-Net, Fully convolutional neural networks for 
-    volumetric medical image segmentation. In Proceedings of the 2016 Fourth International 
-    Conference on 3D Vision (3DV) (pp. 565-571).
+    Milletari, F., Navab, N. and Ahmadi, S.A., 2016, October. V-net: Fully convolutional neural 
+    networks for volumetric medical image segmentation. In 2016 fourth international conference 
+    on 3D vision (3DV) (pp. 565-571). IEEE.
     
     The Two-dimensional version is inspired by:
     https://github.com/FENGShuanglang/2D-Vnet-Keras
@@ -113,7 +113,9 @@ def vnet_2d_base(input_tensor, filter_num, res_num_ini=1, res_num_max=3,
     Output
     ----------
         X: the output tensor of the model base.
-        
+    
+    * This is a modified version of V-net for 2-d input.
+    * All the 5-by-5 convolutional kernels are changed (and fixed) to 3-by-3.
     '''
 
     depth_ = len(filter_num)
@@ -163,9 +165,9 @@ def vnet_2d(input_size, filter_num, n_labels,
     '''
     vnet 2d
     
-    Milletari, F., Navab, N., Ahmadi, S.A.V. and V-Net, Fully convolutional neural networks for 
-    volumetric medical image segmentation. In Proceedings of the 2016 Fourth International 
-    Conference on 3D Vision (3DV) (pp. 565-571).
+    Milletari, F., Navab, N. and Ahmadi, S.A., 2016, October. V-net: Fully convolutional neural 
+    networks for volumetric medical image segmentation. In 2016 fourth international conference 
+    on 3D vision (3DV) (pp. 565-571). IEEE.
     
     The Two-dimensional version is inspired by:
     https://github.com/FENGShuanglang/2D-Vnet-Keras
@@ -192,7 +194,9 @@ def vnet_2d(input_size, filter_num, n_labels,
     Output
     ----------
         model: a keras model 
-        
+    
+    * This is a modified version of V-net for 2-d input.
+    * All the 5-by-5 convolutional kernels are changed (and fixed) to 3-by-3.
     '''
     
     IN = Input(input_size)
