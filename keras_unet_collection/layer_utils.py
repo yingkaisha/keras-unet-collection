@@ -141,6 +141,35 @@ def CONV_stack(X, channel, kernel_size=3, stack_num=2,
         
     return X
 
+def Res_CONV_stack(X, X_skip, channel, res_num, activation='ReLU', batch_norm=False, name='res_conv'):
+    '''
+    Stacked convolutional layers with residual path
+     
+    Input
+    ----------
+        X: input tensor
+        X_skip: the tensor that does go into the residual path (usually it is a copy of X)
+        channel: number of convolution filters
+        res_num: number of convolutional layers within the residual path
+        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+        batch_norm: True for batch normalization, False otherwise.
+        name: name of the created keras layers
+        
+    Output
+    ----------
+        X: output tensor
+        
+    '''  
+    X = CONV_stack(X, channel, kernel_size=3, stack_num=res_num, dilation_rate=1, 
+                   activation=activation, batch_norm=batch_norm, name=name)
+
+    X = add([X_skip, X], name='{}_add'.format(name))
+    
+    activation_func = eval(activation)
+    X = activation_func(name='{}_add_activation'.format(name))(X)
+    
+    return X
+
 def Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, dilation_rate=1, activation='ReLU', batch_norm=False, name='sep_conv'):
     '''
     Depthwise separable convolution with 
