@@ -4,7 +4,7 @@
 [![PyPI license](https://img.shields.io/pypi/l/keras-unet-collection.svg)](https://pypi.org/project/keras-unet-collection/)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/yingkaisha/keras-unet-collection/graphs/commit-activity)
 
-The `tensorflow.keras` implementation of U-net, U-net++, R2U-net, Attention U-net, ResUnet-a, U^2-Net, and UNET 3+.
+The `tensorflow.keras` implementation of U-net, V-net, U-net++, R2U-net, Attention U-net, ResUnet-a, U^2-Net, and UNET 3+.
 
 ----------
 
@@ -13,20 +13,21 @@ The `tensorflow.keras` implementation of U-net, U-net++, R2U-net, Attention U-ne
 | `keras_unet_collection.models`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Name | Reference |
 |:---------------|:----------------|:----------------|
 | `unet_2d`      | U-net/Unet      | [Ronneberger et al. (2015)](https://link.springer.com/chapter/10.1007/978-3-319-24574-4_28) |
+| `vnet_2d`      | V-net (modified for 2-d inputs) | [Milletari et al. (2016)](https://arxiv.org/abs/1606.04797) |
 | `unet_plus_2d` | U-net++/Unet++  | [Zhou et al. (2018)](https://link.springer.com/chapter/10.1007/978-3-030-00889-5_1) |
 | `r2_unet_2d`   | R2U-Net         | [Alom et al. (2018)](https://arxiv.org/abs/1802.06955) |
 | `att_unet_2d`  | Attention U-net | [Oktay et al. (2018)](https://arxiv.org/abs/1804.03999) |
 | `resunet_a_2d` | ResUnet-a       | [Diakogiannis et al. (2020)](https://doi.org/10.1016/j.isprsjprs.2020.01.013) |
 | `u2net_2d`     | U^2-Net         | [Qin et al. (2020)](https://arxiv.org/abs/2005.09007) |
-| `unet_3plus_2d` | UNET 3+/Unet+++ | [Huang et al. (2020)](https://arxiv.org/abs/2004.08790) |
+| `unet_3plus_2d` | UNET 3+        | [Huang et al. (2020)](https://arxiv.org/abs/2004.08790) |
 
 ----------
 
-` keras_unet_collection.backbones` contains functions that build the backone of Unet variants for model customization and debugging.
+` keras_unet_collection.base` contains functions that build the base architecture of Unet variants for model customization and debugging.
 
-| ` keras_unet_collection.backbones` | Notes |
+| ` keras_unet_collection.base` | Notes |
 |:-----------------------------------|:------|
-| `unet_2d_backbone`, `unet_plus_2d_backbone`, `r2_unet_2d_backbone`, `att_unet_2d_backbone`, `resunet_a_2d_backbone`, `u2net_2d_backbone`, `unet_3plus_2d_backbone` | Functions that accept an input tensor and hyper-parameters of the corresponded model, and produce output tensors of the backbone. |
+| `unet_2d_base`, `vnet_2d_base`, `unet_plus_2d_base`, `r2_unet_2d_base`, `att_unet_2d_base`, `resunet_a_2d_base`, `u2net_2d_base`, `unet_3plus_2d_base` | Functions that accept an input tensor and hyper-parameters of the corresponded model, and produce output tensors of the base architecture. |
 
 ----------
 
