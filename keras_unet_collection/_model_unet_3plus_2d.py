@@ -103,44 +103,32 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
         
             # counting scale difference between the current down- and upsampling levels
             pool_scale = lev-i-1 # -1 for python indexing
-        
-            # one scale deeper input is obtained from the nearest **decoder** output
-            if pool_scale == -1:
-            
-                if unpool:
-                    X = UpSampling2D(size=(2, 2), interpolation='bilinear', 
-                                     name='{}_unpool_{}_de{}'.format(name, i, i))(X_decoder[i])
-                else:
-                    X = Conv2DTranspose(f, kernel_size=3, strides=(2, 2), padding='same', 
-                                        name='{}_transconv_{}_de{}'.format(name, i, i))(X_decoder[i])
-            
-            # other inputs are obtained from **encoder** outputs
-            else:
-                # deeper tensors are upsampled
-                if pool_scale < 0:
-                    pool_size = 2**(-1*pool_scale)
-                    
-                    if unpool:
-                        X = UpSampling2D(size=(pool_size, pool_size), interpolation='bilinear', 
-                                         name='{}_unpool_{}_en{}'.format(name, i, lev))(X_encoder[lev])
-                    else:
-                        X = Conv2DTranspose(f, kernel_size=3, strides=(pool_size, pool_size), padding='same', 
-                                            name='{}_transconv_{}_en{}'.format(name, i, lev))(X_encoder[lev])
-                # unet skip connection (identity mapping)    
-                elif pool_scale == 0:
-                    
-                    X = X_encoder[lev]
-                    
-                # shallower tensors are downsampled
-                else:
-                    pool_size = 2**(pool_scale)
 
-                    if pool:
-                        X = MaxPooling2D(pool_size=(pool_size, pool_size), 
-                                         name='{}_maxpool_{}_en{}'.format(name, i, lev))(X_encoder[lev])
-                    else:
-                        X = stride_conv(X_encoder[lev], f, pool_size=pool_size, activation=activation, 
-                            batch_norm=batch_norm, name='{}_stridconv_{}_en{}'.format(name, i, lev))
+            # deeper tensors are obtained from **decoder** outputs
+            if pool_scale < 0:
+                pool_size = 2**(-1*pool_scale)
+
+                if unpool:
+                    X = UpSampling2D(size=(pool_size, pool_size), interpolation='bilinear', 
+                                     name='{}_unpool_{}_en{}'.format(name, i, lev))(X_decoder[lev])
+                else:
+                    X = Conv2DTranspose(f, kernel_size=3, strides=(pool_size, pool_size), padding='same', 
+                                        name='{}_transconv_{}_en{}'.format(name, i, lev))(X_decoder[lev])
+            # unet skip connection (identity mapping)    
+            elif pool_scale == 0:
+
+                X = X_encoder[lev]
+
+            # shallower tensors are obtained from **encoder** outputs
+            else:
+                pool_size = 2**(pool_scale)
+
+                if pool:
+                    X = MaxPooling2D(pool_size=(pool_size, pool_size), 
+                                     name='{}_maxpool_{}_en{}'.format(name, i, lev))(X_encoder[lev])
+                else:
+                    X = stride_conv(X_encoder[lev], f, pool_size=pool_size, activation=activation, 
+                        batch_norm=batch_norm, name='{}_stridconv_{}_en{}'.format(name, i, lev))
                         
             # a conv layer after feature map scale change
             X = CONV_stack(X, f, kernel_size=3, stack_num=1, 
@@ -202,8 +190,10 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
         pool: True for maxpooling, False for strided convolutional layers.
         unpool: True for unpooling with bilinear interpolation, False for transpose convolutional layers.
         deep_supervision: True for a model that supports deep supervision. Details see Huang et al. (2020).
-        name: prefix of the created keras layers.    
-    
+        name: prefix of the created keras layers.  
+        
+    * The Classification-guided Module (CGM) is not implemented. 
+      See https://github.com/yingkaisha/keras-unet-collection/tree/main/examples for a relevant example.
     * Automated mode is applied for determining `filter_num_skip`, `filter_num_aggregate`.
     * The default output activation is sigmoid, consistent with Huang et al. (2020).
     * Downsampling is achieved through maxpooling and can be replaced by strided convolutional layers here.

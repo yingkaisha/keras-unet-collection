@@ -14,6 +14,8 @@ def vnet_left(X, channel, res_num, activation='ReLU', pool=True, batch_norm=Fals
     '''
     Encoder block of 2-d VNet
     
+    vnet_left(X, channel, res_num, activation='ReLU', pool=True, batch_norm=False, name='left')
+    
     Input
     ----------
         X: input tensor
@@ -42,6 +44,8 @@ def vnet_left(X, channel, res_num, activation='ReLU', pool=True, batch_norm=Fals
 def vnet_right(X, X_list, channel, res_num, activation='ReLU', unpool=True, batch_norm=False, name='right'):
     '''
     Decoder block of vnet 2d
+    
+    vnet_right(X, X_list, channel, res_num, activation='ReLU', unpool=True, batch_norm=False, name='right')
     
     Input
     ----------
@@ -84,9 +88,12 @@ def vnet_right(X, X_list, channel, res_num, activation='ReLU', unpool=True, batc
     return X
 
 def vnet_2d_base(input_tensor, filter_num, res_num_ini=1, res_num_max=3, 
-                     activation='ReLU', batch_norm=False, pool=True, unpool=True, name='vnet'):
+                 activation='ReLU', batch_norm=False, pool=True, unpool=True, name='vnet'):
     '''
     The base layers of vnet 2d
+    
+    vnet_2d_base(input_tensor, filter_num, res_num_ini=1, res_num_max=3, 
+                 activation='ReLU', batch_norm=False, pool=True, unpool=True, name='vnet')
     
     Milletari, F., Navab, N. and Ahmadi, S.A., 2016, October. V-net: Fully convolutional neural 
     networks for volumetric medical image segmentation. In 2016 fourth international conference 
@@ -164,6 +171,11 @@ def vnet_2d(input_size, filter_num, n_labels,
             batch_norm=False, pool=True, unpool=True, name='vnet'):
     '''
     vnet 2d
+    
+    vnet_2d(input_size, filter_num, n_labels,
+            res_num_ini=1, res_num_max=3, 
+            activation='ReLU', output_activation='Softmax', 
+            batch_norm=False, pool=True, unpool=True, name='vnet')
     
     Milletari, F., Navab, N. and Ahmadi, S.A., 2016, October. V-net: Fully convolutional neural 
     networks for volumetric medical image segmentation. In 2016 fourth international conference 
