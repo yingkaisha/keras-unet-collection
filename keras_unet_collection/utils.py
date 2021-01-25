@@ -1,3 +1,4 @@
+
 import numpy as np
 from PIL import Image
 
@@ -50,3 +51,19 @@ def shuffle_ind(L):
     ind = np.arange(L)
     np.random.shuffle(ind)
     return ind
+
+def freeze_model(model, freeze_batch_norm=False):
+    
+    if freeze_batch_norm:
+        for layer in model.layers:
+            layer.trainable = False
+    else:
+        from tensorflow.keras.layers import BatchNormalization    
+        for layer in model.layers:
+            if isinstance(layer, BatchNormalization):
+                layer.trainable = True
+            else:
+                layer.trainable = False
+    return model
+
+

@@ -9,6 +9,41 @@ from tensorflow.keras.layers import BatchNormalization, Activation, concatenate,
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU
 from tensorflow.keras.models import Model
 
+def UNET_left(X, channel, kernel_size=3, 
+              stack_num=2, activation='ReLU', 
+              pool=True, batch_norm=False, name='left0'):
+    '''
+    Encoder block of UNet (downsampling --> stacked Conv2D)
+    
+    Input
+    ----------
+        X: input tensor
+        channel: number of convolution filters
+        kernel_size: size of 2-d convolution kernels
+        stack_num: number of convolutional layers
+        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+        pool: True for maxpooling, False for strided convolutional layers
+        batch_norm: True for batch normalization, False otherwise.
+        name: name of the created keras layers
+    Output
+    ----------
+        X: output tensor
+    
+    *downsampling is fixed to 2-by-2, e.g., reducing feature map sizes from 64-by-64 to 32-by-32
+    '''
+    pool_size = 2
+    
+    # maxpooling layer vs strided convolutional layers
+    if pool:
+        X = MaxPooling2D(pool_size=(pool_size, pool_size), name='{}_pool'.format(name))(X)
+    else:
+        X = stride_conv(X, channel, pool_size, activation=activation, batch_norm=batch_norm, name=name)
+    
+    # stack linear convolutional layers
+    X = CONV_stack(X, channel, kernel_size, stack_num=stack_num, activation=activation, batch_norm=batch_norm, name=name)
+    
+    return X
+
 def unet_plus_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
                       activation='ReLU', batch_norm=False, pool=True, unpool=True, 
                       deep_supervision=False, name='xnet'):
