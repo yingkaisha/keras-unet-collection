@@ -54,7 +54,7 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
                        (2) ResNet50, ResNet101, ResNet152
                        (3) ResNet50V2, ResNet101V2, ResNet152V2
                        (4) DenseNet121, DenseNet169, DenseNet201
-                       (5) EfficientNetB[0,7]
+                       (5) EfficientNetB[0-7]
         weights: one of None (random initialization), 'imagenet' (pre-training on ImageNet), 
                  or the path to the weights file to be loaded.
         freeze_backbone: True for a frozen backbone
@@ -256,7 +256,7 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
                        (2) ResNet50, ResNet101, ResNet152
                        (3) ResNet50V2, ResNet101V2, ResNet152V2
                        (4) DenseNet121, DenseNet169, DenseNet201
-                       (5) EfficientNetB[0,7]
+                       (5) EfficientNetB[0-7]
         weights: one of None (random initialization), 'imagenet' (pre-training on ImageNet), 
                  or the path to the weights file to be loaded.
         freeze_backbone: True for a frozen backbone
