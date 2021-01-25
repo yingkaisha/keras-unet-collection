@@ -3,10 +3,9 @@ from __future__ import absolute_import
 
 from keras_unet_collection.layer_utils import *
 from keras_unet_collection.activations import GELU, Snake
+from keras_unet_collection._backbone_zoo import backbone_zoo, bach_norm_checker
 
-from tensorflow.keras.layers import Input, Conv2D
-from tensorflow.keras.layers import BatchNormalization, Activation, concatenate, multiply
-from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU
+from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 
 def UNET_left(X, channel, kernel_size=3, 
@@ -78,7 +77,7 @@ def UNET_right(X, X_list, channel, kernel_size=3,
         X = UpSampling2D(size=(pool_size, pool_size), name='{}_unpool'.format(name))(X)
     else:
         # Transpose convolutional layer --> stacked linear convolutional layers
-        X = Conv2DTranspose(channel, kernel_size, strides=(pool_size, pool_size), 
+        X = Conv2DTranspose(channel, pool_size, strides=(pool_size, pool_size), 
                                          padding='same', name='{}_trans_conv'.format(name))(X)
     
     # linear convolutional layers before concatenation
@@ -96,7 +95,7 @@ def UNET_right(X, X_list, channel, kernel_size=3,
 
 def unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2, 
                  activation='ReLU', batch_norm=False, pool=True, unpool=True, 
-                 backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=False, name='unet'):
+                 backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet'):
     
     '''
     The base of U-net
@@ -120,8 +119,22 @@ def unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
         activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., ReLU
         batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
-        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
-        name: prefix of the created keras layers.
+        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.
+        name: prefix of the created keras model and its layers.
+        
+        ---------- (keywords of backbone options) ----------
+        backbone_name: the bakcbone model name. Should be one of the `tensorflow.keras.applications` class.
+                       None (default) means no backbone. 
+                       Currently supported backbones are:
+                       (1) VGG16, VGG19
+                       (2) ResNet50, ResNet101, ResNet152
+                       (3) ResNet50V2, ResNet101V2, ResNet152V2
+                       (4) DenseNet121, DenseNet169, DenseNet201
+                       (5) EfficientNetB[0,7]
+        weights: one of None (random initialization), 'imagenet' (pre-training on ImageNet), 
+                 or the path to the weights file to be loaded.
+        freeze_backbone: True for a frozen backbone
+        freeze_batch_norm: False for not freezing batch normalization layers.
         
     Output
     ----------
@@ -154,13 +167,17 @@ def unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
         # handling VGG16 and VGG19 separately
         if 'VGG' in backbone:
             backbone_ = backbone_zoo(backbone, weights, input_tensor, depth_, freeze_backbone, freeze_batch_norm)
+            # collecting backbone feature maps
+            X_skip = backbone_([input_tensor,])
+            depth_encode = len(X_skip)
+            
         # for other backbones
         else:
             backbone_ = backbone_zoo(backbone, weights, input_tensor, depth_-1, freeze_backbone, freeze_batch_norm)
+            # collecting backbone feature maps
+            X_skip = backbone_([input_tensor,])
+            depth_encode = len(X_skip) + 1
 
-        # collecting backbone feature maps
-        X_skip = backbone_([input_tensor,])
-        depth_encode = len(X_skip)
 
         # extra conv2d blocks are applied
         # if downsampling levels of a backbone < user-specified downsampling levels
@@ -198,13 +215,13 @@ def unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
     if depth_decode < depth_-1:
         for i in range(depth_-depth_decode-1):
             i_real = i + depth_decode
-            X = UNET_right(X, _, filter_num_decode[i_real], stack_num=stack_num_up, activation=activation, 
+            X = UNET_right(X, None, filter_num_decode[i_real], stack_num=stack_num_up, activation=activation, 
                        unpool=unpool, batch_norm=batch_norm, concat=False, name='{}_up{}'.format(name, i_real+1))   
     return X
 
 def unet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_up=2,
             activation='ReLU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, 
-            backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=False, name='unet'):
+            backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet'):
     '''
     U-net
     
@@ -232,7 +249,21 @@ def unet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_up=2,
         batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
-        name: prefix of the created keras layers.
+        name: prefix of the created keras model and its layers.
+        
+        ---------- (keywords of backbone options) ----------
+        backbone_name: the bakcbone model name. Should be one of the `tensorflow.keras.applications` class.
+                       None (default) means no backbone. 
+                       Currently supported backbones are:
+                       (1) VGG16, VGG19
+                       (2) ResNet50, ResNet101, ResNet152
+                       (3) ResNet50V2, ResNet101V2, ResNet152V2
+                       (4) DenseNet121, DenseNet169, DenseNet201
+                       (5) EfficientNetB[0,7]
+        weights: one of None (random initialization), 'imagenet' (pre-training on ImageNet), 
+                 or the path to the weights file to be loaded.
+        freeze_backbone: True for a frozen backbone
+        freeze_batch_norm: False for not freezing batch normalization layers.
         
     Output
     ----------
@@ -240,7 +271,10 @@ def unet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_up=2,
     
     '''
     activation_func = eval(activation)
-
+    
+    if backbone is not None:
+        bach_norm_checker(backbone, batch_norm)
+        
     IN = Input(input_size)
     
     # base    

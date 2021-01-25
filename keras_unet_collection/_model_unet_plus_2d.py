@@ -3,50 +3,18 @@ from __future__ import absolute_import
 
 from keras_unet_collection.layer_utils import *
 from keras_unet_collection.activations import GELU, Snake
+from keras_unet_collection._backbone_zoo import backbone_zoo, bach_norm_checker
+from keras_unet_collection._model_unet_2d import UNET_left, UNET_right
 
-from tensorflow.keras.layers import Input, Conv2D
-from tensorflow.keras.layers import BatchNormalization, Activation, concatenate, multiply
-from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU
+from tensorflow.keras.layers import Input
+
 from tensorflow.keras.models import Model
 
-def UNET_left(X, channel, kernel_size=3, 
-              stack_num=2, activation='ReLU', 
-              pool=True, batch_norm=False, name='left0'):
-    '''
-    Encoder block of UNet (downsampling --> stacked Conv2D)
-    
-    Input
-    ----------
-        X: input tensor
-        channel: number of convolution filters
-        kernel_size: size of 2-d convolution kernels
-        stack_num: number of convolutional layers
-        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
-        pool: True for maxpooling, False for strided convolutional layers
-        batch_norm: True for batch normalization, False otherwise.
-        name: name of the created keras layers
-    Output
-    ----------
-        X: output tensor
-    
-    *downsampling is fixed to 2-by-2, e.g., reducing feature map sizes from 64-by-64 to 32-by-32
-    '''
-    pool_size = 2
-    
-    # maxpooling layer vs strided convolutional layers
-    if pool:
-        X = MaxPooling2D(pool_size=(pool_size, pool_size), name='{}_pool'.format(name))(X)
-    else:
-        X = stride_conv(X, channel, pool_size, activation=activation, batch_norm=batch_norm, name=name)
-    
-    # stack linear convolutional layers
-    X = CONV_stack(X, channel, kernel_size, stack_num=stack_num, activation=activation, batch_norm=batch_norm, name=name)
-    
-    return X
+import warnings
 
 def unet_plus_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
-                      activation='ReLU', batch_norm=False, pool=True, unpool=True, 
-                      deep_supervision=False, name='xnet'):
+                      activation='ReLU', batch_norm=False, pool=True, unpool=True, deep_supervision=False, 
+                      backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='xnet'):
     '''
     The base of U-net++
     
@@ -72,7 +40,21 @@ def unet_plus_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
         pool: True for maxpooling, False for strided convolutional layers.
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.
         deep_supervision: True for a model that supports deep supervision. Details see Zhou et al. (2018).
-        name: prefix of the created keras layers.
+        name: prefix of the created keras model and its layers.
+        
+        ---------- (keywords of backbone options) ----------
+        backbone_name: the bakcbone model name. Should be one of the `tensorflow.keras.applications` class.
+                       None (default) means no backbone. 
+                       Currently supported backbones are:
+                       (1) VGG16, VGG19
+                       (2) ResNet50, ResNet101, ResNet152
+                       (3) ResNet50V2, ResNet101V2, ResNet152V2
+                       (4) DenseNet121, DenseNet169, DenseNet201
+                       (5) EfficientNetB[0,7]
+        weights: one of None (random initialization), 'imagenet' (pre-training on ImageNet), 
+                 or the path to the weights file to be loaded.
+        freeze_backbone: True for a frozen backbone
+        freeze_batch_norm: False for not freezing batch normalization layers.
         
     Output
     ----------
@@ -84,39 +66,92 @@ def unet_plus_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
     
     '''
     
+    activation_func = eval(activation)
+
     depth_ = len(filter_num)
-    
-    X = input_tensor
-    
     # allocate nested lists for collecting output tensors 
-    X_nest_skip = [[] for _ in range(depth_)] 
-    
-    # downsampling blocks (same as in 'unet_2d')
-    X = CONV_stack(X, filter_num[0], stack_num=stack_num_down, activation=activation, 
-                   batch_norm=batch_norm, name='{}_down0'.format(name))
-    X_nest_skip[0].append(X)
-    for i, f in enumerate(filter_num[1:]):
-        X = UNET_left(X, f, stack_num=stack_num_down, activation=activation, 
-                      pool=pool, batch_norm=batch_norm, name='{}_down{}'.format(name, i+1))        
+    X_nest_skip = [[] for _ in range(depth_)]
+
+    # no backbone cases
+    if backbone is None:
+
+        X = input_tensor
+
+        # downsampling blocks (same as in 'unet_2d')
+        X = CONV_stack(X, filter_num[0], stack_num=stack_num_down, activation=activation, 
+                       batch_norm=batch_norm, name='{}_down0'.format(name))
         X_nest_skip[0].append(X)
-    
+        for i, f in enumerate(filter_num[1:]):
+            X = UNET_left(X, f, stack_num=stack_num_down, activation=activation, 
+                          pool=pool, batch_norm=batch_norm, name='{}_down{}'.format(name, i+1))        
+            X_nest_skip[0].append(X)
+
+    # backbone cases
+    else:        
+        # handling VGG16 and VGG19 separately
+        if 'VGG' in backbone:
+            backbone_ = backbone_zoo(backbone, weights, input_tensor, depth_, freeze_backbone, freeze_batch_norm)
+            # collecting backbone feature maps
+            X_nest_skip[0] += backbone_([input_tensor,])
+            depth_encode = len(X_nest_skip[0])
+
+        # for other backbones
+        else:
+            backbone_ = backbone_zoo(backbone, weights, input_tensor, depth_-1, freeze_backbone, freeze_batch_norm)
+            # collecting backbone feature maps
+            X_nest_skip[0] += backbone_([input_tensor,])
+            depth_encode = len(X_nest_skip[0]) + 1
+
+        # extra conv2d blocks are applied
+        # if downsampling levels of a backbone < user-specified downsampling levels
+        if depth_encode < depth_:
+
+            # begins at the deepest available tensor  
+            X = X_nest_skip[0][-1]
+
+            # extra downsamplings
+            for i in range(depth_-depth_encode):
+                i_real = i + depth_encode
+
+                X = UNET_left(X, filter_num[i_real], stack_num=stack_num_down, activation=activation, pool=pool, 
+                              batch_norm=batch_norm, name='{}_down{}'.format(name, i_real+1))
+                X_nest_skip[0].append(X)
+
+
+    X = X_nest_skip[0][-1]
+
     for nest_lev in range(1, depth_):
-        
-        # subset filter numbers to the current upsampling level
-        filter_num_sub = filter_num[:(depth_-nest_lev)]
-        
+
+        # depth difference between the deepest nest skip and the current upsampling  
+        depth_lev = depth_-nest_lev
+
+        # number of available encoded tensors
+        depth_decode = len(X_nest_skip[nest_lev-1])
+
         # loop over individual upsamling levels
-        for i, f in enumerate(filter_num_sub[::-1]):
-            
+        for i in range(1, depth_decode):
+
             # collecting previous downsampling outputs
             previous_skip = []
             for previous_lev in range(nest_lev):
-                previous_skip.append(X_nest_skip[previous_lev][i])
-                
+                previous_skip.append(X_nest_skip[previous_lev][i-1])
+
             # upsamping block that concatenates all available (same feature map size) down-/upsampling outputs
             X_nest_skip[nest_lev].append(
-                UNET_right(X_nest_skip[nest_lev-1][i+1], previous_skip, filter_num[i], 
-                           stack_num=stack_num_up, activation=activation, name='xnet_{}{}'.format(nest_lev, i)))
+                UNET_right(X_nest_skip[nest_lev-1][i], previous_skip, filter_num[i-1], 
+                           stack_num=stack_num_up, activation=activation, unpool=unpool, 
+                               batch_norm=batch_norm, concat=False, name='{}_{}{}'.format(name, nest_lev, i-1)))
+
+        if depth_decode < depth_lev+1:
+
+            X = X_nest_skip[nest_lev-1][-1]
+
+            for j in range(depth_lev-depth_decode+1):
+                j_real = j + depth_decode
+                X = UNET_right(X, None, filter_num[j_real-1], 
+                               stack_num=stack_num_up, activation=activation, unpool=unpool, 
+                               batch_norm=batch_norm, concat=False, name='{}_{}{}'.format(name, nest_lev, j_real-1))
+                X_nest_skip[nest_lev].append(X)
             
     # output
     if deep_supervision:
@@ -131,10 +166,9 @@ def unet_plus_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
     else:
         return X_nest_skip[-1][0]
 
-def unet_plus_2d(input_size, filter_num, n_labels,
-                 stack_num_down=2, stack_num_up=2,
-                 activation='ReLU', output_activation='Softmax', 
-                 batch_norm=False, pool=True, unpool=True, deep_supervision=False, name='xnet'):
+def unet_plus_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_up=2,
+                 activation='ReLU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, deep_supervision=False, 
+                 backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='xnet'):
     '''
     U-net++
     
@@ -165,7 +199,21 @@ def unet_plus_2d(input_size, filter_num, n_labels,
         pool: True for maxpooling, False for strided convolutional layers.
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.
         deep_supervision: True for a model that supports deep supervision. Details see Zhou et al. (2018).
-        name: prefix of the created keras layers.
+        name: prefix of the created keras model and its layers.
+        
+        ---------- (keywords of backbone options) ----------
+        backbone_name: the bakcbone model name. Should be one of the `tensorflow.keras.applications` class.
+                       None (default) means no backbone. 
+                       Currently supported backbones are:
+                       (1) VGG16, VGG19
+                       (2) ResNet50, ResNet101, ResNet152
+                       (3) ResNet50V2, ResNet101V2, ResNet152V2
+                       (4) DenseNet121, DenseNet169, DenseNet201
+                       (5) EfficientNetB[0,7]
+        weights: one of None (random initialization), 'imagenet' (pre-training on ImageNet), 
+                 or the path to the weights file to be loaded.
+        freeze_backbone: True for a frozen backbone
+        freeze_batch_norm: False for not freezing batch normalization layers.
         
     Output
     ----------
@@ -175,31 +223,64 @@ def unet_plus_2d(input_size, filter_num, n_labels,
     
     depth_ = len(filter_num)
     
-    IN = Input(input_size)
+    if backbone is not None:
+        bach_norm_checker(backbone, batch_norm)
     
+    IN = Input(input_size)
     # base
     X = unet_plus_2d_base(IN, filter_num, stack_num_down=stack_num_down, stack_num_up=stack_num_up,
-                          activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, 
-                          deep_supervision=deep_supervision, name=name)
+                          activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, deep_supervision=deep_supervision, 
+                          backbone=backbone, weights=weights, freeze_backbone=freeze_backbone, freeze_batch_norm=freeze_batch_norm, name=name)
     
     # output
     if deep_supervision:
         
+        if (backbone is not None) and freeze_backbone:
+            backbone_warn = '\n\nThe shallowest U-net++ deep supervision branch ("sup0") directly connects to a frozen backbone.\nTesting your configurations on `keras_unet_collection.base.unet_plus_2d_base` is recommended.'
+            warnings.warn(backbone_warn);
+            
         # model base returns a list of tensors
         X_list = X
         OUT_list = []
         
         print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows (the last one is the final output):')
         
+        # no backbone or VGG backbones
         # depth_ > 2 is expected (a least two downsampling blocks)
-        for i in range(1, depth_-1):
-            
-            print('\t{}_output_sup{}'.format(name, i))
-            OUT_list.append(CONV_output(X_list[i], n_labels, kernel_size=1, activation=output_activation, 
-                                        name='{}_output_sup{}'.format(name, i)))
+        if (backbone is None) or 'VGG' in backbone:
         
-        print('\t{}_output_final'.format(name))
-        OUT_list.append(CONV_output(X_list[-1], n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name)))
+            for i in range(0, depth_-1):
+                if output_activation is None:
+                    print('\t{}_output_sup{}'.format(name, i))
+                else:
+                    print('\t{}_output_sup{}_activation'.format(name, i))
+                    
+                OUT_list.append(CONV_output(X_list[i], n_labels, kernel_size=1, activation=output_activation, 
+                                            name='{}_output_sup{}'.format(name, i)))
+        # other backbones        
+        else:
+            for i in range(1, depth_-1):
+                if output_activation is None:
+                    print('\t{}_output_sup{}'.format(name, i-1))
+                else:
+                    print('\t{}_output_sup{}_activation'.format(name, i-1))
+                
+                # an extra upsampling for creating full resolution feature maps
+                if unpool:
+                    X = UpSampling2D(size=(2, 2), name='{}_sup{}_unpool'.format(name, i-1))(X_list[i])
+                else:
+                    X = Conv2DTranspose(filter_num[i], 2, strides=(2, 2), padding='same', 
+                                        name='{}_sup{}_trans_conv'.format(name, i-1))(X_list[i])
+                    
+                OUT_list.append(CONV_output(X, n_labels, kernel_size=1, activation=output_activation, 
+                                        name='{}_output_sup{}'.format(name, i-1)))
+                
+        if output_activation is None:
+            print('\t{}_output_final'.format(name))
+        else:
+            print('\t{}_output_final_activation'.format(name))
+            
+        OUT_list.append(CONV_output(X_list[-1], n_labels, kernel_size=1, activation=output_activation, name='{}_output_final'.format(name)))
         
     else:
         OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))

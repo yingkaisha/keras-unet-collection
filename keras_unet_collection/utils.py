@@ -4,6 +4,7 @@ from PIL import Image
 
 def image_to_array(filenames, size, channel):
     '''
+    Converting RGB images to numpy arrays.
     
     Input
     ----------
@@ -39,6 +40,8 @@ def image_to_array(filenames, size, channel):
 
 def shuffle_ind(L):
     '''
+    Generating random shuffled indices.
+    
     Input
     ----------
         L: an int that defines the largest index
@@ -53,7 +56,14 @@ def shuffle_ind(L):
     return ind
 
 def freeze_model(model, freeze_batch_norm=False):
+    '''
+    freeze a keras model
     
+    Input
+    ----------
+        model: a keras model
+        freeze_batch_norm: False for not freezing batch notmalization layers
+    '''
     if freeze_batch_norm:
         for layer in model.layers:
             layer.trainable = False
