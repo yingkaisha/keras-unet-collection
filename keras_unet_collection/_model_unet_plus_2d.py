@@ -7,7 +7,6 @@ from keras_unet_collection._backbone_zoo import backbone_zoo, bach_norm_checker
 from keras_unet_collection._model_unet_2d import UNET_left, UNET_right
 
 from tensorflow.keras.layers import Input
-
 from tensorflow.keras.models import Model
 
 import warnings
@@ -16,11 +15,11 @@ def unet_plus_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
                       activation='ReLU', batch_norm=False, pool=True, unpool=True, deep_supervision=False, 
                       backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='xnet'):
     '''
-    The base of U-net++
+    The base of U-net++ with an optional ImageNet backbone
     
     unet_plus_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
-                      activation='ReLU', batch_norm=False, pool=True, unpool=True, 
-                      deep_supervision=False, name='xnet')
+                      activation='ReLU', batch_norm=False, pool=True, unpool=True, deep_supervision=False, 
+                      backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='xnet')
     
     ----------
     Zhou, Z., Siddiquee, M.M.R., Tajbakhsh, N. and Liang, J., 2018. Unet++: A nested u-net architecture 
@@ -170,12 +169,11 @@ def unet_plus_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_u
                  activation='ReLU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, deep_supervision=False, 
                  backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='xnet'):
     '''
-    U-net++
+    U-net++ with an optional ImageNet backbone.
     
-    unet_plus_2d(input_size, filter_num, n_labels,
-                 stack_num_down=2, stack_num_up=2,
-                 activation='ReLU', output_activation='Softmax', 
-                 batch_norm=False, pool=True, unpool=True, deep_supervision=False, name='xnet')
+    unet_plus_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_up=2,
+                 activation='ReLU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, deep_supervision=False, 
+                 backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='xnet')
     
     ----------
     Zhou, Z., Siddiquee, M.M.R., Tajbakhsh, N. and Liang, J., 2018. Unet++: A nested u-net architecture 

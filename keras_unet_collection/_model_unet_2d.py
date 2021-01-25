@@ -98,11 +98,11 @@ def unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
                  backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet'):
     
     '''
-    The base of U-net
+    The base of U-net with an optional ImageNet backbone.
     
     unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2, 
-                     activation='ReLU', batch_norm=False, pool=True, unpool=True, 
-                     backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=False, name='unet')
+                 activation='ReLU', batch_norm=False, pool=True, unpool=True, 
+                 backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet')
     
     ----------
     Ronneberger, O., Fischer, P. and Brox, T., 2015, October. U-net: Convolutional networks for biomedical image segmentation. 
@@ -224,11 +224,11 @@ def unet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_up=2,
             activation='ReLU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, 
             backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet'):
     '''
-    U-net
+    U-net with an optional bakcbone
     
     unet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_up=2,
-                activation='ReLU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, 
-                backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=False, name='unet')
+            activation='ReLU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, 
+            backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet')
     
     ----------
     Ronneberger, O., Fischer, P. and Brox, T., 2015, October. U-net: Convolutional networks for biomedical image segmentation. 
