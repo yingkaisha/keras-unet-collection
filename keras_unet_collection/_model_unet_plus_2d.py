@@ -140,7 +140,7 @@ def unet_plus_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
             X_nest_skip[nest_lev].append(
                 UNET_right(X_nest_skip[nest_lev-1][i], previous_skip, filter_num[i-1], 
                            stack_num=stack_num_up, activation=activation, unpool=unpool, 
-                               batch_norm=batch_norm, concat=False, name='{}_{}{}'.format(name, nest_lev, i-1)))
+                           batch_norm=batch_norm, concat=False, name='{}_up{}_from{}'.format(name, nest_lev-1, i-1)))
 
         if depth_decode < depth_lev+1:
 
@@ -150,7 +150,7 @@ def unet_plus_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
                 j_real = j + depth_decode
                 X = UNET_right(X, None, filter_num[j_real-1], 
                                stack_num=stack_num_up, activation=activation, unpool=unpool, 
-                               batch_norm=batch_norm, concat=False, name='{}_{}{}'.format(name, nest_lev, j_real-1))
+                               batch_norm=batch_norm, concat=False, name='{}_up{}_from{}'.format(name, nest_lev-1, j_real-1))
                 X_nest_skip[nest_lev].append(X)
             
     # output

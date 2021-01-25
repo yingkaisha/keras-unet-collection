@@ -153,7 +153,8 @@ def unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
         X = input_tensor
 
         # stacked conv2d before downsampling
-        X = CONV_stack(X, filter_num[0], stack_num=stack_num_down, activation=activation, batch_norm=batch_norm, name='{}_down0'.format(name))
+        X = CONV_stack(X, filter_num[0], stack_num=stack_num_down, activation=activation, 
+                       batch_norm=batch_norm, name='{}_down0'.format(name))
         X_skip.append(X)
 
         # downsampling blocks
@@ -208,7 +209,7 @@ def unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
     # upsampling with concatenation
     for i in range(depth_decode):
         X = UNET_right(X, [X_decode[i],], filter_num_decode[i], stack_num=stack_num_up, activation=activation, 
-                       unpool=unpool, batch_norm=batch_norm, name='{}_up{}'.format(name, i+1))
+                       unpool=unpool, batch_norm=batch_norm, name='{}_up{}'.format(name, i))
 
     # if tensors for concatenation is not enough
     # then use upsampling without concatenation 
@@ -216,7 +217,7 @@ def unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
         for i in range(depth_-depth_decode-1):
             i_real = i + depth_decode
             X = UNET_right(X, None, filter_num_decode[i_real], stack_num=stack_num_up, activation=activation, 
-                       unpool=unpool, batch_norm=batch_norm, concat=False, name='{}_up{}'.format(name, i_real+1))   
+                       unpool=unpool, batch_norm=batch_norm, concat=False, name='{}_up{}'.format(name, i_real))   
     return X
 
 def unet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_up=2,
