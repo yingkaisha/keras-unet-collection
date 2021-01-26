@@ -5,7 +5,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name = "keras-unet-collection",
-    version = "0.0.12",
+    version = "0.0.13",
     author = "Yingkai (Kyle) Sha",
     author_email = "yingkaisha@gmail.com",
     description = "The Tensorflow, Keras implementation of U-net, V-net, U-net++, R2U-net, Attention U-net, ResUnet-a, U^2-Net, and UNET 3+ with optional ImageNet backbones.",
