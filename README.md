@@ -27,7 +27,7 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, R2U-net, Attenti
 
 ----------
 
-` keras_unet_collection.base` contains functions that build the base architecture of Unet variants for model customization and debugging.
+` keras_unet_collection.base` contains functions that build the base architecture (i.e., without model heads) of Unet variants for model customization and debugging.
 
 | ` keras_unet_collection.base` | Notes |
 |:-----------------------------------|:------|
