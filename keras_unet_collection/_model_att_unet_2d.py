@@ -3,10 +3,10 @@ from __future__ import absolute_import
 
 from keras_unet_collection.layer_utils import *
 from keras_unet_collection.activations import GELU, Snake
+from keras_unet_collection._model_unet_2d import UNET_left, UNET_right
+from keras_unet_collection._backbone_zoo import backbone_zoo, bach_norm_checker
 
-from tensorflow.keras.layers import Input, Conv2D
-from tensorflow.keras.layers import BatchNormalization, Activation, concatenate, multiply
-from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU
+from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 
 
@@ -67,14 +67,14 @@ def UNET_att_right(X, X_left, channel, att_channel, kernel_size=3, stack_num=2,
     return H
 
 def att_unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
-                     activation='ReLU', atten_activation='ReLU', attention='add',
-                     batch_norm=False, pool=True, unpool=True, name='att-unet'):
+                     activation='ReLU', atten_activation='ReLU', attention='add', batch_norm=False, pool=True, unpool=True, 
+                     backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='attunet'):
     '''
-    The base of Attention U-net
+    The base of Attention U-net with an optional ImageNet backbone
     
     att_unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
-                     activation='ReLU', atten_activation='ReLU', attention='add',
-                     batch_norm=False, pool=True, unpool=True, name='att-unet')
+                     activation='ReLU', atten_activation='ReLU', attention='add', batch_norm=False, pool=True, unpool=True, 
+                     backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='att-unet')
                 
     ----------
     Oktay, O., Schlemper, J., Folgoc, L.L., Lee, M., Heinrich, M., Misawa, K., Mori, K., McDonagh, S., Hammerla, N.Y., Kainz, B. 
@@ -96,48 +96,111 @@ def att_unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
         batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
-        name: prefix of the created keras layers.
+        name: prefix of the created keras model and its layers.
+        
+        ---------- (keywords of backbone options) ----------
+        backbone_name: the bakcbone model name. Should be one of the `tensorflow.keras.applications` class.
+                       None (default) means no backbone. 
+                       Currently supported backbones are:
+                       (1) VGG16, VGG19
+                       (2) ResNet50, ResNet101, ResNet152
+                       (3) ResNet50V2, ResNet101V2, ResNet152V2
+                       (4) DenseNet121, DenseNet169, DenseNet201
+                       (5) EfficientNetB[0-7]
+        weights: one of None (random initialization), 'imagenet' (pre-training on ImageNet), 
+                 or the path to the weights file to be loaded.
+        freeze_backbone: True for a frozen backbone
+        freeze_batch_norm: False for not freezing batch normalization layers.
         
     Output
     ----------
         X: the output tensor of the base.
     
     '''
-    
     activation_func = eval(activation)
 
-    X = input_tensor
+    depth_ = len(filter_num)
     X_skip = []
-    
-    # downsampling blocks
-    X = CONV_stack(X, filter_num[0], stack_num=stack_num_down, activation=activation, batch_norm=batch_norm, name='{}_down0'.format(name))
-    X_skip.append(X)
-    
-    for i, f in enumerate(filter_num[1:]):
-        X = UNET_left(X, f, stack_num=stack_num_down, activation=activation, pool=pool, 
-                      batch_norm=batch_norm, name='{}_down{}'.format(name, i+1))        
+
+    # no backbone cases
+    if backbone is None:
+        X = input_tensor
+        # downsampling blocks
+        X = CONV_stack(X, filter_num[0], stack_num=stack_num_down, activation=activation, 
+                       batch_norm=batch_norm, name='{}_down0'.format(name))
         X_skip.append(X)
-        
-    # upsampling blocks
-    X_skip = X_skip[:-1][::-1]
-    for i, f in enumerate(filter_num[:-1][::-1]):
-        X = UNET_att_right(X, X_skip[i], f, att_channel=f//2, stack_num=stack_num_up,
+
+        for i, f in enumerate(filter_num[1:]):
+            X = UNET_left(X, f, stack_num=stack_num_down, activation=activation, pool=pool, 
+                          batch_norm=batch_norm, name='{}_down{}'.format(name, i+1))        
+            X_skip.append(X)
+
+    else:
+        # handling VGG16 and VGG19 separately
+        if 'VGG' in backbone:
+            backbone_ = backbone_zoo(backbone, weights, input_tensor, depth_, freeze_backbone, freeze_batch_norm)
+            # collecting backbone feature maps
+            X_skip = backbone_([input_tensor,])
+            depth_encode = len(X_skip)
+
+        # for other backbones
+        else:
+            backbone_ = backbone_zoo(backbone, weights, input_tensor, depth_-1, freeze_backbone, freeze_batch_norm)
+            # collecting backbone feature maps
+            X_skip = backbone_([input_tensor,])
+            depth_encode = len(X_skip) + 1
+
+        # extra conv2d blocks are applied
+        # if downsampling levels of a backbone < user-specified downsampling levels
+        if depth_encode < depth_:
+
+            # begins at the deepest available tensor  
+            X = X_skip[-1]
+
+            # extra downsamplings
+            for i in range(depth_-depth_encode):
+                i_real = i + depth_encode
+
+                X = UNET_left(X, filter_num[i_real], stack_num=stack_num_down, activation=activation, pool=pool, 
+                              batch_norm=batch_norm, name='{}_down{}'.format(name, i_real+1))
+                X_skip.append(X)
+
+    # reverse indexing encoded feature maps
+    X_skip = X_skip[::-1]
+    # upsampling begins at the deepest available tensor
+    X = X_skip[0]
+    # other tensors are preserved for concatenation
+    X_decode = X_skip[1:]
+    depth_decode = len(X_decode)
+
+    # reverse indexing filter numbers
+    filter_num_decode = filter_num[:-1][::-1]
+
+    for i in range(depth_decode):
+        f = filter_num_decode[i]
+
+        X = UNET_att_right(X, X_decode[i], f, att_channel=f//2, stack_num=stack_num_up,
                            activation=activation, atten_activation=atten_activation, attention=attention,
-                           unpool=unpool, batch_norm=batch_norm, name='{}_up{}'.format(name, i+1))
-    
+                           unpool=unpool, batch_norm=batch_norm, name='{}_up{}'.format(name, i))
+
+    # if tensors for concatenation is not enough
+    # then use upsampling without concatenation 
+    if depth_decode < depth_-1:
+        for i in range(depth_-depth_decode-1):
+            i_real = i + depth_decode
+            X = UNET_right(X, None, filter_num_decode[i_real], stack_num=stack_num_up, activation=activation, 
+                       unpool=unpool, batch_norm=batch_norm, concat=False, name='{}_up{}'.format(name, i_real)) 
     return X
 
-def att_unet_2d(input_size, filter_num, n_labels,
-                stack_num_down=2, stack_num_up=2,
-                activation='ReLU', atten_activation='ReLU', attention='add', output_activation='Softmax', 
-                batch_norm=False, pool=True, unpool=True, name='att-unet'):
+def att_unet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_up=2, activation='ReLU', 
+                atten_activation='ReLU', attention='add', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, 
+                backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='attunet'):
     '''
-    Attention U-net
+    Attention U-net with an optional ImageNet backbone
     
-    att_unet_2d(input_size, filter_num, n_labels,
-                stack_num_down=2, stack_num_up=2,
-                activation='ReLU', atten_activation='ReLU', attention='add', output_activation='Softmax', 
-                batch_norm=False, pool=True, unpool=True, name='att-unet')
+    att_unet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_up=2, activation='ReLU', 
+                atten_activation='ReLU', attention='add', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, 
+                backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='att-unet')
                 
     ----------
     Oktay, O., Schlemper, J., Folgoc, L.L., Lee, M., Heinrich, M., Misawa, K., Mori, K., McDonagh, S., Hammerla, N.Y., Kainz, B. 
@@ -163,7 +226,21 @@ def att_unet_2d(input_size, filter_num, n_labels,
         batch_norm: True for batch normalization.
         pool: True for maxpooling, False for strided convolutional layers.
         unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
-        name: prefix of the created keras layers.
+        name: prefix of the created keras model and its layers.
+        
+        ---------- (keywords of backbone options) ----------
+        backbone_name: the bakcbone model name. Should be one of the `tensorflow.keras.applications` class.
+                       None (default) means no backbone. 
+                       Currently supported backbones are:
+                       (1) VGG16, VGG19
+                       (2) ResNet50, ResNet101, ResNet152
+                       (3) ResNet50V2, ResNet101V2, ResNet152V2
+                       (4) DenseNet121, DenseNet169, DenseNet201
+                       (5) EfficientNetB[0-7]
+        weights: one of None (random initialization), 'imagenet' (pre-training on ImageNet), 
+                 or the path to the weights file to be loaded.
+        freeze_backbone: True for a frozen backbone
+        freeze_batch_norm: False for not freezing batch normalization layers.
         
     Output
     ----------
@@ -174,17 +251,22 @@ def att_unet_2d(input_size, filter_num, n_labels,
     # one of the ReLU, LeakyReLU, PReLU, ELU
     activation_func = eval(activation)
     
+    if backbone is not None:
+        bach_norm_checker(backbone, batch_norm)
+    
     IN = Input(input_size)
     
     # base
     X = att_unet_2d_base(IN, filter_num, stack_num_down=stack_num_down, stack_num_up=stack_num_up,
                          activation=activation, atten_activation=atten_activation, attention=attention,
-                         batch_norm=batch_norm, pool=pool, unpool=unpool, name=name)
+                         batch_norm=batch_norm, pool=pool, unpool=unpool, 
+                         backbone=backbone, weights=weights, freeze_backbone=freeze_backbone, 
+                         freeze_batch_norm=freeze_backbone, name=name)
     
     # output layer
     OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
     
     # functional API model
-    model = Model(inputs=[IN], outputs=[OUT], name='{}_model'.format(name))
+    model = Model(inputs=[IN,], outputs=[OUT,], name='{}_model'.format(name))
     
     return model
