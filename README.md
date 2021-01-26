@@ -8,10 +8,11 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, R2U-net, Attenti
 
 ----------
 
-`keras_unet_collection.models` contains functions that configure keras models with user-specific hyper-parameter options. See the [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/user_guid_models.ipynb) for more details.
+`keras_unet_collection.models` contains functions that configure keras models with user-specific hyper-parameter options. 
 
 * Pre-trained ImageNet backbones are supported for U-net, U-net++, Attention U-net, and UNET 3+.
 * Deep supervision is supported for U-net++, UNET 3+, and U^2-Net.
+* See the [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/user_guid_models.ipynb) for other options and use cases.
 
 | `keras_unet_collection.models`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Name | Reference |
 |:---------------|:----------------|:----------------|
