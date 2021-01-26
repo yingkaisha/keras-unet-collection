@@ -11,3 +11,4 @@
 | 0.0.9    | 2021-01-14    | (1) New feature. two util functions.<br />(2) Documentation. UNET 3+ image segmentation. |
 | 0.0.10   | 2021-01-18    | (1) Bug fixes.<br />(2) Rename the `backbone` module as `base`.<br />(3) New documentation.<br />(4) New feature. 2-d V-net. |
 | 0.0.11   | 2021-01-22    | Bug fix for UNET 3+. |
+| 0.0.12   | 2021-01-25    | (1) Bug fixes.<br />(2) New feature. Backbone models for Unet, Unet++, and UNET 3+. |
