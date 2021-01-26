@@ -8,20 +8,21 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, R2U-net, Attenti
 
 ----------
 
-`keras_unet_collection.models` contains functions that configure keras models with user-specific hyper-parameter options, including network depth, hidden layer activations and batch normalization for all the U-net variants, and deep supervision for U-net++, U^2-Net and UNET 3+. See the [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/user_guid_models.ipynb) for more details.
+`keras_unet_collection.models` contains functions that configure keras models with user-specific hyper-parameter options. See the [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/user_guid_models.ipynb) for more details.
+
+* Pre-trained ImageNet backbones are supported for U-net, U-net++, Attention U-net, and UNET 3+.
+* Deep supervision is supported for U-net++, UNET 3+, and U^2-Net.
 
 | `keras_unet_collection.models`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Name | Reference |
 |:---------------|:----------------|:----------------|
-| `unet_2d`      | U-net*      | [Ronneberger et al. (2015)](https://link.springer.com/chapter/10.1007/978-3-319-24574-4_28) |
+| `unet_2d`      | U-net           | [Ronneberger et al. (2015)](https://link.springer.com/chapter/10.1007/978-3-319-24574-4_28) |
 | `vnet_2d`      | V-net (modified for 2-d inputs) | [Milletari et al. (2016)](https://arxiv.org/abs/1606.04797) |
-| `unet_plus_2d` | U-net++*  | [Zhou et al. (2018)](https://link.springer.com/chapter/10.1007/978-3-030-00889-5_1) |
+| `unet_plus_2d` | U-net++         | [Zhou et al. (2018)](https://link.springer.com/chapter/10.1007/978-3-030-00889-5_1) |
 | `r2_unet_2d`   | R2U-Net         | [Alom et al. (2018)](https://arxiv.org/abs/1802.06955) |
 | `att_unet_2d`  | Attention U-net | [Oktay et al. (2018)](https://arxiv.org/abs/1804.03999) |
 | `resunet_a_2d` | ResUnet-a       | [Diakogiannis et al. (2020)](https://doi.org/10.1016/j.isprsjprs.2020.01.013) |
 | `u2net_2d`     | U^2-Net         | [Qin et al. (2020)](https://arxiv.org/abs/2005.09007) |
-| `unet_3plus_2d` | UNET 3+*        | [Huang et al. (2020)](https://arxiv.org/abs/2004.08790) |
-
-*Pre-trained ImageNet backbones are supported. 
+| `unet_3plus_2d` | UNET 3+        | [Huang et al. (2020)](https://arxiv.org/abs/2004.08790) |
 
 ----------
 
@@ -62,7 +63,7 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, R2U-net, Attenti
 from keras_unet_collection import models
 # e.g. models.unet_2d(...)
 ```
-* **Note**: For U-net, U-net++, and UNET 3+, currently supported backbone models are: VGG[16,19], ResNet[50,101,152], ResNetV2[50,101,152], DenseNet[121,169,201], and EfficientNetB[0-7] . See [Keras Applications](https://keras.io/api/applications/) for the details of these backbones. 
+* **Note**: Currently supported backbone models are: `VGG[16,19]`, `ResNet[50,101,152]`, `ResNetV2[50,101,152]`, `DenseNet[121,169,201]`, and `EfficientNetB[0-7]`. See [Keras Applications](https://keras.io/api/applications/) for the details of these backbones. 
 
 * **Note**: Because of the changable hyper-parameter options, neural networks produced by this package may not be compatible with other pre-trained models of the same name. Training from scratch is recommended.
 
