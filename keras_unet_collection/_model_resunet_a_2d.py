@@ -4,9 +4,7 @@ from __future__ import absolute_import
 from keras_unet_collection.layer_utils import *
 from keras_unet_collection.activations import GELU, Snake
 
-from tensorflow.keras.layers import Input, Conv2D
-from tensorflow.keras.layers import BatchNormalization, Activation, concatenate, multiply
-from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU
+from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 
 def ResUNET_a_block(X, channel, kernel_size=3, dilation_num=1.0, activation='ReLU', batch_norm=False, name='res_a_block'):
