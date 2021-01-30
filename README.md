@@ -50,11 +50,9 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, R2U-net, Attenti
 
 # Dependencies
 
-* TensorFlow 2.3.0
+* TensorFlow 2.3.0, Keras 2.4.0, Numpy 1.18.2.
 
-* Keras 2.4.0
-
-* Numpy 1.18.2
+* (Optional for examples) Pillow, matplotlib, etc.
 
 # Installation and usage
 
@@ -68,7 +66,11 @@ from keras_unet_collection import models
 
 * **Note**: Because of the changable hyper-parameter options, neural networks produced by this package may not be compatible with other pre-trained models of the same name. Training from scratch is recommended.
 
-* Jupyter notebooks are provided as [examples](https://github.com/yingkaisha/keras-unet-collection/tree/main/examples).
+* Jupyter notebooks are provided as [examples](https://github.com/yingkaisha/keras-unet-collection/tree/main/examples):
+
+  * Attention U-net with VGG16 backbone [[link]](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/human-seg_atten-unet-backbone_coco.ipynb).
+  
+  * UNET 3+ with deep supervision and classification guided module [[link]](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/segmentation_unet-three-plus_oxford-iiit.ipynb).
 
 * [Changelog](https://github.com/yingkaisha/keras-unet-collection/blob/main/CHANGELOG.md)
 
