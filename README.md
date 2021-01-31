@@ -14,7 +14,7 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, R2U-net, Attenti
 * Deep supervision is supported for U-net++, UNET 3+, and U^2-Net.
 * See the [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/user_guid_models.ipynb) for other options and use cases.
 
-| `keras_unet_collection.models`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Name | Reference |
+| `keras_unet_collection.models` | Name | Reference |
 |:---------------|:----------------|:----------------|
 | `unet_2d`      | U-net           | [Ronneberger et al. (2015)](https://link.springer.com/chapter/10.1007/978-3-319-24574-4_28) |
 | `vnet_2d`      | V-net (modified for 2-d inputs) | [Milletari et al. (2016)](https://arxiv.org/abs/1606.04797) |
@@ -42,17 +42,11 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, R2U-net, Attenti
 | `GELU`  | Gaussian Error Linear Units (GELU)   | [Hendrycks et al. (2016)](https://arxiv.org/abs/1606.08415) |
 | `Snake` | Snake activation                     | [Liu et al. (2020)](https://arxiv.org/abs/2006.08195) |
 
-| `keras_unet_collection.losses`&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&#8239; | Name | Reference |
+| `keras_unet_collection.losses` | Name | Reference |
 |:----------------|:----------------|:----------------|
 | `tversky`       | Tversky loss                   | [Hashemi et al. (2018)](https://ieeexplore.ieee.org/abstract/document/8573779) |
 | `focal_tversky` | Focal Tversky loss             | [Abraham et al. (2019)](https://ieeexplore.ieee.org/abstract/document/8759329) |
 | `crps2d_tf`     | CRPS loss (experimental)       | |
-
-# Dependencies
-
-* TensorFlow 2.3.0, Keras 2.4.0, Numpy 1.18.2.
-
-* (Optional for examples) Pillow, matplotlib, etc.
 
 # Installation and usage
 
@@ -73,6 +67,12 @@ from keras_unet_collection import models
   * UNET 3+ with deep supervision and classification guided module [[link]](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/segmentation_unet-three-plus_oxford-iiit.ipynb).
 
 * [Changelog](https://github.com/yingkaisha/keras-unet-collection/blob/main/CHANGELOG.md)
+
+# Dependencies
+
+* TensorFlow 2.3.0, Keras 2.4.0, Numpy 1.18.2.
+
+* (Optional for examples) Pillow, matplotlib, etc.
 
 # Overview
 
