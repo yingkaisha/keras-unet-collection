@@ -14,3 +14,4 @@
 | 0.0.12   | 2021-01-25    | (1) Bugfix.<br />(2) New feature. Backbone models for Unet, Unet++, and UNET 3+. |
 | 0.0.13   | 2021-01-25    | (1) Bugfix.<br />(2) New feature. Backbone models for Attention Unet. |
 | 0.0.14   | 2021-01-30    | Python script cleaning and documentation fix. |
+| 0.0.15   | 2021-02-03    | (1) Bugfix.<br />(2) New feature. More `pool` and `unpool` options. |
