@@ -15,18 +15,18 @@ def RR_CONV(X, channel, kernel_size=3, stack_num=2, recur_num=2, activation='ReL
     
     Input
     ----------
-        X: input tensor
-        channel: number of convolution filters
-        kernel_size: size of 2-d convolution kernels
-        stack_num: number of stacked recurrent convolutional layers
+        X: input tensor.
+        channel: number of convolution filters.
+        kernel_size: size of 2-d convolution kernels.
+        stack_num: number of stacked recurrent convolutional layers.
         recur_num: number of recurrent iterations.
-        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
         batch_norm: True for batch normalization, False otherwise.
-        name: name of the created keras layers
+        name: prefix of the created keras layers.
         
     Output
     ----------
-        X: output tensor
+        X: output tensor.
         
     '''
     
@@ -41,11 +41,13 @@ def RR_CONV(X, channel, kernel_size=3, stack_num=2, recur_num=2, activation='ReL
         
         if batch_norm:
             layer_res = BatchNormalization(name='{}_bn{}'.format(name, i))(layer_res)
+            
         layer_res = activation_func(name='{}_activation{}'.format(name, i))(layer_res)
             
         for j in range(recur_num):
             
             layer_add = add([layer_res, layer_main], name='{}_add{}_{}'.format(name, i, j))
+            
             layer_res = Conv2D(channel, kernel_size, padding='same', name='{}_conv{}_{}'.format(name, i, j))(layer_add)
             
             if batch_norm:
@@ -61,10 +63,10 @@ def RR_CONV(X, channel, kernel_size=3, stack_num=2, recur_num=2, activation='ReL
 
 
 def UNET_RR_left(X, channel, kernel_size=3, 
-                  stack_num=2, recur_num=2, activation='ReLU', 
-                  pool=True, batch_norm=False, name='left0'):
+                 stack_num=2, recur_num=2, activation='ReLU', 
+                 pool=True, batch_norm=False, name='left0'):
     '''
-    Encoder block of R2U-Net (downsampling --> RR CNN blocks)
+    The encoder block of R2U-Net.
     
     UNET_RR_left(X, channel, kernel_size=3, 
                  stack_num=2, recur_num=2, activation='ReLU', 
@@ -72,29 +74,29 @@ def UNET_RR_left(X, channel, kernel_size=3,
     
     Input
     ----------
-        X: input tensor
-        channel: number of convolution filters
-        kernel_size: size of 2-d convolution kernels
-        stack_num: number of stacked recurrent convolutional layers
+        X: input tensor.
+        channel: number of convolution filters.
+        kernel_size: size of 2-d convolution kernels.
+        stack_num: number of stacked recurrent convolutional layers.
         recur_num: number of recurrent iterations.
-        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
-        pool: True for maxpooling, False for strided convolutional layers
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
+        pool: True or 'max' for MaxPooling2D.
+              'ave' for AveragePooling2D.
+              False for strided conv + batch norm + activation.
         batch_norm: True for batch normalization, False otherwise.
-        name: name of the created keras layers
+        name: prefix of the created keras layers.
         
     Output
     ----------
-        X: output tensor
+        X: output tensor.
     
     *downsampling is fixed to 2-by-2, e.g., reducing feature map sizes from 64-by-64 to 32-by-32
     '''
     pool_size = 2
     
     # maxpooling layer vs strided convolutional layers
-    if pool:
-        X = MaxPooling2D(pool_size=(pool_size, pool_size), name='{}_pool'.format(name))(X)
-    else:
-        X = stride_conv(X, channel, pool_size, activation=activation, batch_norm=batch_norm, name=name)
+    X = encode_layer(X, channel, pool_size, pool, activation=activation, 
+                     batch_norm=batch_norm, name='{}_encode'.format(name))
     
     # stack linear convolutional layers
     X = RR_CONV(X, channel, stack_num=stack_num, recur_num=recur_num, 
@@ -106,7 +108,7 @@ def UNET_RR_right(X, X_list, channel, kernel_size=3,
                    stack_num=2, recur_num=2, activation='ReLU',
                    unpool=True, batch_norm=False, name='right0'):
     '''
-    Decoder block of R2U-Net
+    The decoder block of R2U-Net.
     
     UNET_RR_right(X, X_list, channel, kernel_size=3, 
                   stack_num=2, recur_num=2, activation='ReLU',
@@ -114,33 +116,29 @@ def UNET_RR_right(X, X_list, channel, kernel_size=3,
     
     Input
     ----------
-        X: input tensor
-        X_list: a list of other tensors that connected to the input tensor
-        channel: number of convolution filters
-        kernel_size: size of 2-d convolution kernels
-        stack_num: number of stacked recurrent convolutional layers
+        X: input tensor.
+        X_list: a list of other tensors that connected to the input tensor.
+        channel: number of convolution filters.
+        kernel_size: size of 2-d convolution kernels.
+        stack_num: number of stacked recurrent convolutional layers.
         recur_num: number of recurrent iterations.
-        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
-        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
+        unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
+                'nearest' for Upsampling2D with nearest interpolation.
+                False for Conv2DTranspose + batch norm + activation.
         batch_norm: True for batch normalization, False otherwise.
-        name: name of the created keras layers.
+        name: prefix of the created keras layers.
         
     Output
     ----------
         X: output tensor
-
-    *upsampling is fixed to 2-by-2, e.g., reducing feature map sizes from 64-by-64 to 32-by-32
     
     '''
     
     pool_size = 2
     
-    if unpool:
-        X = UpSampling2D(size=(pool_size, pool_size), name='{}_unpool'.format(name))(X)
-    else:
-        # Transpose convolutional layer --> stacked linear convolutional layers
-        X = Conv2DTranspose(channel, kernel_size, strides=(pool_size, pool_size), 
-                                         padding='same', name='{}_trans_conv'.format(name))(X)
+    X = decode_layer(X, channel, pool_size, unpool, 
+                     activation=activation, batch_norm=batch_norm, name='{}_decode'.format(name))
     
     # linear convolutional layers before concatenation
     X = CONV_stack(X, channel, kernel_size, stack_num=1, activation=activation, 
@@ -159,7 +157,7 @@ def r2_unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2, 
                     activation='ReLU', batch_norm=False, pool=True, unpool=True, name='res_unet'):
     
     '''
-    The base of Recurrent Residual (R2) U-Net
+    The base of Recurrent Residual (R2) U-Net.
     
     r2_unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2, recur_num=2,
                     activation='ReLU', batch_norm=False, pool=True, unpool=True, name='res_unet')
@@ -170,22 +168,26 @@ def r2_unet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2, 
     
     Input
     ----------
-        input_tensor: the input tensor of the base, e.g., keras.layers.Inpyt((None, None, 3))
-        filter_num: an iterable that defines the number of filters for each \
-                      down- and upsampling level. E.g., [64, 128, 256, 512]
-                      the depth is expected as `len(filter_num)`
+        input_tensor: the input tensor of the base, e.g., `keras.layers.Inpyt((None, None, 3))`.
+        filter_num: a list that defines the number of filters for each \
+                    down- and upsampling levels. e.g., `[64, 128, 256, 512]`.
+                    The depth is expected as `len(filter_num)`.
         stack_num_down: number of stacked recurrent convolutional layers per downsampling level/block.
         stack_num_down: number of stacked recurrent convolutional layers per upsampling level/block.
         recur_num: number of recurrent iterations.
-        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., ReLU
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
         batch_norm: True for batch normalization.
-        pool: True for maxpooling, False for strided convolutional layers.
-        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
+        pool: True or 'max' for MaxPooling2D.
+              'ave' for AveragePooling2D.
+              False for strided conv + batch norm + activation.
+        unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
+                'nearest' for Upsampling2D with nearest interpolation.
+                False for Conv2DTranspose + batch norm + activation.                 
         name: prefix of the created keras layers.
         
     Output
     ----------
-        X: the output tensor of the base.
+        X: output tensor.
     
     '''
     
@@ -232,26 +234,30 @@ def r2_unet_2d(input_size, filter_num, n_labels,
     
     Input
     ----------
-        input_size: a tuple that defines the shape of input, e.g., (None, None, 3)
-        filter_num: an iterable that defines the number of filters for each \
-                      down- and upsampling level. E.g., [64, 128, 256, 512]
-                      the depth is expected as `len(filter_num)`
+        input_size: the size/shape of network input, e.g., `(128, 128, 3)`.
+        filter_num: a list that defines the number of filters for each \
+                    down- and upsampling levels. e.g., `[64, 128, 256, 512]`.
+                    The depth is expected as `len(filter_num)`.
         n_labels: number of output labels.
         stack_num_down: number of stacked recurrent convolutional layers per downsampling level/block.
         stack_num_down: number of stacked recurrent convolutional layers per upsampling level/block.
         recur_num: number of recurrent iterations.
-        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., ReLU
-        output_activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces or 'Sigmoid'.
-                           Default option is Softmax
-                           if None is received, then linear activation is applied.      
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
+        output_activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interface or 'Sigmoid'.
+                           Default option is 'Softmax'.
+                           if None is received, then linear activation is applied.     
         batch_norm: True for batch normalization.
-        pool: True for maxpooling, False for strided convolutional layers.
-        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.                 
+        pool: True or 'max' for MaxPooling2D.
+              'ave' for AveragePooling2D.
+              False for strided conv + batch norm + activation.
+        unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
+                'nearest' for Upsampling2D with nearest interpolation.
+                False for Conv2DTranspose + batch norm + activation.                  
         name: prefix of the created keras layers.
         
     Output
     ----------
-        model: a keras model 
+        model: a keras model.
     
     '''
     

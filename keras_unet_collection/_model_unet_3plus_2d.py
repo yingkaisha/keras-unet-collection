@@ -13,7 +13,7 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
                        stack_num_down=2, stack_num_up=1, activation='ReLU', batch_norm=False, pool=True, unpool=True, 
                        backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet3plus'):
     '''
-    The base of UNET 3+ with an optional ImagNet backbone.
+    The base of UNET 3+ with an optional ImagNet-trained backbone.
     
     unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_num_aggregate, 
                        stack_num_down=2, stack_num_up=1, activation='ReLU', batch_norm=False, pool=True, unpool=True, 
@@ -27,23 +27,26 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
     
     Input
     ----------
-        input_tensor: the input tensor of the base model, e.g., keras.layers.Inpyt((None, None, 3))
-        
-        filter_num_down: an iterable that defines the number of RSU output filters for each 
-                         downsampling level. E.g., [64, 128, 256, 512, 1024]
+        input_tensor: the input tensor of the base, e.g., `keras.layers.Inpyt((None, None, 3))`.        
+        filter_num_down: a list that defines the number of filters for each 
+                         downsampling level. e.g., `[64, 128, 256, 512, 1024]`.
                          the network depth is expected as `len(filter_num_down)`
-        filter_num_skip: an iterable that defines the number of convolution filters after each 
+        filter_num_skip: a list that defines the number of filters after each 
                          full-scale skip connection. Number of elements is expected to be `depth-1`.
                          i.e., the bottom level is not included.
                          * Huang et al. (2020) applied the same numbers for all levels. 
-                           E.g., [64, 64, 64, 64]
+                           e.g., `[64, 64, 64, 64]`.
         filter_num_aggregate: an int that defines the number of channels of full-scale aggregations.
         stack_num_down: number of convolutional layers per downsampling level/block. 
         stack_num_up: number of convolutional layers (after full-scale concat) per upsampling level/block.          
         activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., ReLU                
         batch_norm: True for batch normalization.
-        pool: True for maxpooling, False for strided convolutional layers.
-        unpool: True for unpooling with bilinear interpolation, False for transpose convolutional layers.  
+        pool: True or 'max' for MaxPooling2D.
+              'ave' for AveragePooling2D.
+              False for strided conv + batch norm + activation.
+        unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
+                'nearest' for Upsampling2D with nearest interpolation.
+                False for Conv2DTranspose + batch norm + activation.     
         name: prefix of the created keras model and its layers.
         
         ---------- (keywords of backbone options) ----------
@@ -57,7 +60,7 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
                        (5) EfficientNetB[0-7]
         weights: one of None (random initialization), 'imagenet' (pre-training on ImageNet), 
                  or the path to the weights file to be loaded.
-        freeze_backbone: True for a frozen backbone
+        freeze_backbone: True for a frozen backbone.
         freeze_batch_norm: False for not freezing batch normalization layers.   
 
     * Downsampling is achieved through maxpooling and can be replaced by strided convolutional layers here.
@@ -68,7 +71,7 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
         A list of tensors with the first/second/third tensor obtained from 
         the deepest/second deepest/third deepest upsampling block, etc.
         * The feature map sizes of these tensors are different, 
-          with first tensor has the smallest size. 
+          with the first tensor has the smallest size. 
     
     '''
     
@@ -152,13 +155,10 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
             # deeper tensors are obtained from **decoder** outputs
             if pool_scale < 0:
                 pool_size = 2**(-1*pool_scale)
+                
+                X = decode_layer(X_decoder[lev], f, pool_size, unpool, 
+                     activation=activation, batch_norm=batch_norm, name='{}_up_{}_en{}'.format(name, i, lev))
 
-                if unpool:
-                    X = UpSampling2D(size=(pool_size, pool_size), interpolation='bilinear', 
-                                     name='{}_unpool_{}_en{}'.format(name, i, lev))(X_decoder[lev])
-                else:
-                    X = Conv2DTranspose(f, kernel_size=3, strides=(pool_size, pool_size), padding='same', 
-                                        name='{}_transconv_{}_en{}'.format(name, i, lev))(X_decoder[lev])
             # unet skip connection (identity mapping)    
             elif pool_scale == 0:
 
@@ -167,13 +167,9 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
             # shallower tensors are obtained from **encoder** outputs
             else:
                 pool_size = 2**(pool_scale)
-
-                if pool:
-                    X = MaxPooling2D(pool_size=(pool_size, pool_size), 
-                                     name='{}_maxpool_{}_en{}'.format(name, i, lev))(X_encoder[lev])
-                else:
-                    X = stride_conv(X_encoder[lev], f, pool_size=pool_size, activation=activation, 
-                        batch_norm=batch_norm, name='{}_stridconv_{}_en{}'.format(name, i, lev))
+                
+                X = encode_layer(X_encoder[lev], f, pool_size, pool, activation=activation, 
+                                 batch_norm=batch_norm, name='{}_down_{}_en{}'.format(name, i, lev))
 
             # a conv layer after feature map scale change
             X = CONV_stack(X, f, kernel_size=3, stack_num=1, 
@@ -207,7 +203,7 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
                   backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet3plus'):
     
     '''
-    UNET 3+ with an optional ImageNet backbone.
+    UNET 3+ with an optional ImageNet-trained backbone.
     
     unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto', filter_num_aggregate='auto', 
                   stack_num_down=2, stack_num_up=1, activation='ReLU', output_activation='Sigmoid',
@@ -222,29 +218,29 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
     
     Input
     ----------
-        input_size: a tuple that defines the shape of input, e.g., (None, None, 3)
-        
-        filter_num_down: an iterable that defines the number of RSU output filters for each 
-                         downsampling level. E.g., [64, 128, 256, 512, 1024]
+        input_size: the size/shape of network input, e.g., `(128, 128, 3)`.
+        filter_num_down: a list that defines the number of filters for each 
+                         downsampling level. e.g., `[64, 128, 256, 512, 1024]`.
                          the network depth is expected as `len(filter_num_down)`
-        filter_num_skip: an iterable that defines the number of convolution filters after each 
+        filter_num_skip: a list that defines the number of filters after each 
                          full-scale skip connection. Number of elements is expected to be `depth-1`.
                          i.e., the bottom level is not included.
                          * Huang et al. (2020) applied the same numbers for all levels. 
-                           E.g., [64, 64, 64, 64]
+                           e.g., `[64, 64, 64, 64]`.
         filter_num_aggregate: an int that defines the number of channels of full-scale aggregations.
-              
         stack_num_down: number of convolutional layers per downsampling level/block. 
         stack_num_up: number of convolutional layers (after full-scale concat) per upsampling level/block.
-                         
-        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., ReLU
-        output_activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces or 'Sigmoid'. 
-                           Default option is Softmax
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'
+        output_activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interface or 'Sigmoid'.
+                           Default option is 'Softmax'.
                            if None is received, then linear activation is applied.
-                           
         batch_norm: True for batch normalization.
-        pool: True for maxpooling, False for strided convolutional layers.
-        unpool: True for unpooling with bilinear interpolation, False for transpose convolutional layers.
+        pool: True or 'max' for MaxPooling2D.
+              'ave' for AveragePooling2D.
+              False for strided conv + batch norm + activation.
+        unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
+                'nearest' for Upsampling2D with nearest interpolation.
+                False for Conv2DTranspose + batch norm + activation.   
         deep_supervision: True for a model that supports deep supervision. Details see Huang et al. (2020).
         name: prefix of the created keras model and its layers.
         
@@ -259,7 +255,7 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
                        (5) EfficientNetB[0-7]
         weights: one of None (random initialization), 'imagenet' (pre-training on ImageNet), 
                  or the path to the weights file to be loaded.
-        freeze_backbone: True for a frozen backbone
+        freeze_backbone: True for a frozen backbone.
         freeze_batch_norm: False for not freezing batch normalization layers.   
         
     * The Classification-guided Module (CGM) is not implemented. 
@@ -271,7 +267,7 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
     
     Output
     ----------
-        model: a keras model
+        model: a keras model.
     
     '''
 
@@ -323,21 +319,16 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
         print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows (the last one is the final output):')
         
         # conv2d --> upsampling --> output activation.
-        # * the bottom level tensor is excluded.
-        # indexing starts from one
-        for i in range(0, L_out-1):
+        # index 0 is final output 
+        for i in range(1, L_out):
             
             pool_size = 2**(i)
-
+            
             X = Conv2D(n_labels, 3, padding='same', name='{}_output_conv_{}'.format(name, i-1))(X_decoder[i])
-
-            if unpool:
-                X = UpSampling2D((pool_size, pool_size), interpolation='bilinear', 
-                                 name='{}_output_sup{}'.format(name, i-1))(X)
-            else:
-                X = Conv2DTranspose(n_labels, 3, strides=(pool_size, pool_size), padding='same', 
-                                    name='{}_output_sup{}'.format(name, i-1))(X)
-
+            
+            X = decode_layer(X, n_labels, pool_size, unpool, 
+                             activation=None, batch_norm=False, name='{}_output_sup{}'.format(name, i-1))
+            
             if output_activation:
                 print('\t{}_output_sup{}_activation'.format(name, i-1))
                 
@@ -347,13 +338,17 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
                     activation_func = eval(output_activation)
                     X = activation_func(name='{}_output_sup{}_activation'.format(name, i-1))(X)
             else:
-                print('\t{}_output_sup{}'.format(name, i-1))
-                
+                if unpool is False:
+                    print('\t{}_output_sup{}_trans_conv'.format(name, i-1))
+                else:
+                    print('\t{}_output_sup{}_unpool'.format(name, i-1))
+                    
             OUT_stack.append(X)
-
-        OUT_stack.append(
-            CONV_output(X_decoder[0], n_labels, kernel_size=3, 
-                        activation=activation, name='{}_output_final'.format(name)))
+        
+        X = CONV_output(X_decoder[0], n_labels, kernel_size=3, 
+                        activation=output_activation, name='{}_output_final'.format(name))
+        OUT_stack.append(X)
+        
         if output_activation:
             print('\t{}_output_final_activation'.format(name))
         else:

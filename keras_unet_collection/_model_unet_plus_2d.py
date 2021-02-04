@@ -15,7 +15,7 @@ def unet_plus_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
                       activation='ReLU', batch_norm=False, pool=True, unpool=True, deep_supervision=False, 
                       backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='xnet'):
     '''
-    The base of U-net++ with an optional ImageNet backbone
+    The base of U-net++ with an optional ImageNet-trained backbone
     
     unet_plus_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2,
                       activation='ReLU', batch_norm=False, pool=True, unpool=True, deep_supervision=False, 
@@ -28,16 +28,20 @@ def unet_plus_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
     
     Input
     ----------
-        input_tensor: the input tensor of the base, e.g., keras.layers.Inpyt((None, None, 3))
-        filter_num: an iterable that defines the number of filters for each \
-                      down- and upsampling level. E.g., [64, 128, 256, 512]
-                      the depth is expected as `len(filter_num)`
+        input_tensor: the input tensor of the base, e.g., `keras.layers.Inpyt((None, None, 3))`.
+        filter_num: a list that defines the number of filters for each \
+                    down- and upsampling levels. e.g., `[64, 128, 256, 512]`.
+                    The depth is expected as `len(filter_num)`.
         stack_num_down: number of convolutional layers per downsampling level/block. 
         stack_num_up: number of convolutional layers (after concatenation) per upsampling level/block.
-        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., ReLU
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
         batch_norm: True for batch normalization.
-        pool: True for maxpooling, False for strided convolutional layers.
-        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.
+        pool: True or 'max' for MaxPooling2D.
+              'ave' for AveragePooling2D.
+              False for strided conv + batch norm + activation.
+        unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
+                'nearest' for Upsampling2D with nearest interpolation.
+                False for Conv2DTranspose + batch norm + activation.   
         deep_supervision: True for a model that supports deep supervision. Details see Zhou et al. (2018).
         name: prefix of the created keras model and its layers.
         
@@ -52,13 +56,13 @@ def unet_plus_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
                        (5) EfficientNetB[0-7]
         weights: one of None (random initialization), 'imagenet' (pre-training on ImageNet), 
                  or the path to the weights file to be loaded.
-        freeze_backbone: True for a frozen backbone
+        freeze_backbone: True for a frozen backbone.
         freeze_batch_norm: False for not freezing batch normalization layers.
         
     Output
     ----------
         If deep_supervision = False; Then the output is a tensor.
-        If deep_supervision = True; Then the output is a list of tensors 
+        If deep_supervision = True; Then the output is a list of tensors
             with the first tensor obtained from the first downsampling level (for checking the input/output shapes only),
             the second to the `depth-1`-th tensors obtained from each intermediate upsampling levels (deep supervision tensors),
             and the last tensor obtained from the end of the base.
@@ -169,7 +173,7 @@ def unet_plus_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_u
                  activation='ReLU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, deep_supervision=False, 
                  backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='xnet'):
     '''
-    U-net++ with an optional ImageNet backbone.
+    U-net++ with an optional ImageNet-trained backbone.
     
     unet_plus_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_up=2,
                  activation='ReLU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, deep_supervision=False, 
@@ -182,20 +186,24 @@ def unet_plus_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_u
     
     Input
     ----------
-        input_size: a tuple that defines the shape of input, e.g., (None, None, 3)
-        filter_num: an iterable that defines the number of filters for each
-                    down- and upsampling level. E.g., [64, 128, 256, 512]
-                    the depth is expected as `len(filter_num)`
+        input_size: the size/shape of network input, e.g., `(128, 128, 3)`.
+        filter_num: a list that defines the number of filters for each \
+                    down- and upsampling levels. e.g., `[64, 128, 256, 512]`.
+                    The depth is expected as `len(filter_num)`.
         n_labels: number of output labels.
         stack_num_down: number of convolutional layers per downsampling level/block. 
         stack_num_up: number of convolutional layers (after concatenation) per upsampling level/block.
-        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., ReLU
-        output_activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces or 'Sigmoid'.
-                           Default option is Softmax
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
+        output_activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interface or 'Sigmoid'.
+                           Default option is 'Softmax'.
                            if None is received, then linear activation is applied.
         batch_norm: True for batch normalization.
-        pool: True for maxpooling, False for strided convolutional layers.
-        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.
+        pool: True or 'max' for MaxPooling2D.
+              'ave' for AveragePooling2D.
+              False for strided conv + batch norm + activation.
+        unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
+                'nearest' for Upsampling2D with nearest interpolation.
+                False for Conv2DTranspose + batch norm + activation.   
         deep_supervision: True for a model that supports deep supervision. Details see Zhou et al. (2018).
         name: prefix of the created keras model and its layers.
         
@@ -210,12 +218,12 @@ def unet_plus_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_u
                        (5) EfficientNetB[0-7]
         weights: one of None (random initialization), 'imagenet' (pre-training on ImageNet), 
                  or the path to the weights file to be loaded.
-        freeze_backbone: True for a frozen backbone
+        freeze_backbone: True for a frozen backbone.
         freeze_batch_norm: False for not freezing batch normalization layers.
         
     Output
     ----------
-        model: a keras model 
+        model: a keras model.
     
     '''
     
@@ -264,14 +272,11 @@ def unet_plus_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_u
                     print('\t{}_output_sup{}_activation'.format(name, i-1))
                 
                 # an extra upsampling for creating full resolution feature maps
-                if unpool:
-                    X = UpSampling2D(size=(2, 2), name='{}_sup{}_unpool'.format(name, i-1))(X_list[i])
-                else:
-                    X = Conv2DTranspose(filter_num[i], 2, strides=(2, 2), padding='same', 
-                                        name='{}_sup{}_trans_conv'.format(name, i-1))(X_list[i])
-                    
-                OUT_list.append(CONV_output(X, n_labels, kernel_size=1, activation=output_activation, 
-                                        name='{}_output_sup{}'.format(name, i-1)))
+                X = decode_layer(X_list[i], filter_num[i], 2, unpool, activation=activation, 
+                                 batch_norm=batch_norm, name='{}_sup{}_up'.format(name, i-1))
+                
+                X = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output_sup{}'.format(name, i-1))
+                OUT_list.append(X)
                 
         if output_activation is None:
             print('\t{}_output_final'.format(name))

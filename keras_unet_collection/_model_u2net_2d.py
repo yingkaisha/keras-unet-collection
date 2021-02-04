@@ -10,7 +10,7 @@ from tensorflow.keras.models import Model
 
 def RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True, pool=True, unpool=True, name='RSU'):
     '''
-    Residual U-blocks (RSU)
+    The Residual U-blocks (RSU).
     
     RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True, pool=True, unpool=True, name='RSU')
     
@@ -21,21 +21,28 @@ def RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True,
     
     Input
     ----------
-        X: input tensor
-        channel_in: number of intermediate channels
-        channel_out: number of output channels
-        depth: number of down- and upsampling levels
-        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+        X: input tensor.
+        channel_in: number of intermediate channels.
+        channel_out: number of output channels.
+        depth: number of down- and upsampling levels.
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
         batch_norm: True for batch normalization, False otherwise.
-        pool: True for maxpooling, False for strided convolutional layers.
-        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.  
-        name: name of the created keras layers.
+        pool: True or 'max' for MaxPooling2D.
+              'ave' for AveragePooling2D.
+              False for strided conv + batch norm + activation.
+        unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
+                'nearest' for Upsampling2D with nearest interpolation.
+                False for Conv2DTranspose + batch norm + activation.   
+        name: prefix of the created keras layers.
         
     Output
     ----------
-        X: output tensor
+        X: output tensor.
         
     '''
+    
+    pool_size = 2
+    
     X_skip = []
     
     X = CONV_stack(X, channel_out, kernel_size=3, stack_num=1, 
@@ -49,12 +56,9 @@ def RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True,
     
     for i in range(depth):
         
-        if pool:
-            X = MaxPooling2D(pool_size=(2, 2), name='{}_maxpool_{}'.format(name, i))(X)
-        else:
-            X = stride_conv(X, channel_in, 2, activation=activation, batch_norm=batch_norm, name='{}_stridconv_{}'.format(name, i))
-            
-            
+        X = encode_layer(X, channel_in, pool_size, pool, activation=activation, 
+                         batch_norm=batch_norm, name='{}_encode_{}'.format(name, i))
+        
         X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, dilation_rate=1, 
                        activation=activation, batch_norm=batch_norm, name='{}_down_{}'.format(name, i+1))
         X_skip.append(X)
@@ -66,14 +70,14 @@ def RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True,
     X_skip = X_skip[::-1]
     
     for i in range(depth):
+        
         X = concatenate([X, X_skip[i]], axis=-1, name='{}_concat_{}'.format(name, i))
+        
         X = CONV_stack(X, channel_in, kernel_size=3, stack_num=1, dilation_rate=1, 
                        activation=activation, batch_norm=batch_norm, name='{}_up_{}'.format(name, i+1))
-        if unpool:
-            X = UpSampling2D((2, 2), interpolation='bilinear', name='{}_unpool_{}'.format(name, i))(X)
-        else:
-            X = Conv2DTranspose(channel_in, 3, strides=(2, 2), padding='same', name='{}_trnasconv_{}'.format(name, i))(X)
         
+        X = decode_layer(X, channel_in, pool_size, unpool, 
+                         activation=activation, batch_norm=batch_norm, name='{}_decode_{}'.format(name, i))
         
     X = concatenate([X, X_skip[depth]], axis=-1, name='{}_concat_out'.format(name))
 
@@ -84,7 +88,7 @@ def RSU(X, channel_in, channel_out, depth=5, activation='ReLU', batch_norm=True,
 
 def RSU4F(X, channel_in, channel_out, dilation_num=[1, 2, 4, 8], activation='ReLU', batch_norm=True, name='RSU4F'):
     '''
-    Residual U-blocks with dilated convolutional kernels (RSU4F)
+    The Residual U-blocks with dilated convolutional kernels (RSU4F).
     
     RSU4F(X, channel_in, channel_out, dilation_num=[1, 2, 4, 8], activation='ReLU', batch_norm=True, name='RSU4F')
     
@@ -95,15 +99,14 @@ def RSU4F(X, channel_in, channel_out, dilation_num=[1, 2, 4, 8], activation='ReL
     
     Input
     ----------
-        X: input tensor
-        channel_in: number of intermediate channels
-        channel_out: number of output channels
+        X: input tensor.
+        channel_in: number of intermediate channels.
+        channel_out: number of output channels.
         dilation_num: an iterable that defines dilation rates of convolutional layers.
-                      Qin et al. (2020) suggested [1, 2, 4, 8].
-                      
-        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU
+                      Qin et al. (2020) suggested `[1, 2, 4, 8]`.
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
         batch_norm: True for batch normalization, False otherwise.
-        name: name of the created keras layers.
+        name: prefix of the created keras layers.
         
     Output
     ----------
@@ -160,32 +163,32 @@ def u2net_2d_base(input_tensor,
     Input
     ----------
         input_tensor: the input tensor of the base, e.g., keras.layers.Inpyt((None, None, 3))
-        
-        filter_num_down: an iterable that defines the number of RSU output filters for each 
-                         downsampling level. E.g., [64, 128, 256, 512]
+        filter_num_down: a list that defines the number of RSU output filters for each 
+                         downsampling level. e.g., `[64, 128, 256, 512]`.
                          the network depth is expected as `len(filter_num_down) + len(filter_4f_num)`                         
-        filter_mid_num_down: an iterable that defines the number of RSU intermediate filters for each 
-                             downsampling level. E.g., [16, 32, 64, 128]
-                             *RSU intermediate and output filters must paired, i.e., list with the same length
-                             *RSU intermediate filters numbers are expected to be smaller than output filters numbers
-        filter_mid_num_up: an iterable that defines the number of RSU intermediate filters for each 
-                             upsampling level. E.g., [16, 32, 64, 128]
-                             *RSU intermediate and output filters must paired, i.e., list with the same length
-                             *RSU intermediate filters numbers are expected to be smaller than output filters numbers
-        filter_4f_num: an iterable that defines the number of RSU-4F output filters for each 
-                       downsampling and bottom level. E.g., [512, 512]
-                       the network depth is expected as `len(filter_num_down) + len(filter_4f_num)`
-        filter_4f_mid_num: an iterable that defines the number of RSU-4F intermediate filters for each 
-                           downsampling and bottom level. E.g., [256, 256]
-                           *RSU-4F intermediate and output filters must paired, i.e., list with the same length
-                           *RSU-4F intermediate filters numbers are expected to be smaller than output filters numbers     
-        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., ReLU
-        output_activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces or 'Sigmoid'. 
-                           Default option is Softmax
-                           if None is received, then linear activation is applied.  
+        filter_mid_num_down: a list that defines the number of RSU intermediate filters for each 
+                             downsampling level. e.g., `[16, 32, 64, 128]`.
+                             * RSU intermediate and output filters must paired, i.e., list with the same length.
+                             * RSU intermediate filters numbers are expected to be smaller than output filters numbers.
+        filter_mid_num_up: a list that defines the number of RSU intermediate filters for each 
+                           upsampling level. e.g., `[16, 32, 64, 128]`.
+                           * RSU intermediate and output filters must paired, i.e., list with the same length.
+                           * RSU intermediate filters numbers are expected to be smaller than output filters numbers.
+        filter_4f_num: a list that defines the number of RSU-4F output filters for each 
+                       downsampling and bottom level. e.g., `[512, 512]`.
+                       the network depth is expected as `len(filter_num_down) + len(filter_4f_num)`.
+        filter_4f_mid_num: a list that defines the number of RSU-4F intermediate filters for each 
+                           downsampling and bottom level. e.g., `[256, 256]`.
+                           * RSU-4F intermediate and output filters must paired, i.e., list with the same length.
+                           * RSU-4F intermediate filters numbers are expected to be smaller than output filters numbers.    
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
         batch_norm: True for batch normalization.
-        pool: True for maxpooling, False for strided convolutional layers.
-        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.  
+        pool: True or 'max' for MaxPooling2D.
+              'ave' for AveragePooling2D.
+              False for strided conv + batch norm + activation.
+        unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
+                'nearest' for Upsampling2D with nearest interpolation.
+                False for Conv2DTranspose + batch norm + activation.
         deep_supervision: True for a model that supports deep supervision. Details see Qin et al. (2020).
         name: prefix of the created keras layers.
         
@@ -196,13 +199,15 @@ def u2net_2d_base(input_tensor,
         * The feature map sizes of these tensors are different, 
           with first tensor has the smallest size.
         
-    * Dilation rates of RSU4F layers are fixed to [1, 2, 4, 8].
+    * Dilation rates of RSU4F layers are fixed to `[1, 2, 4, 8]`.
     * Downsampling is achieved through maxpooling in Qin et al. (2020), 
       and can be replaced by strided convolutional layers here.
     * Upsampling is achieved through bilinear interpolation in Qin et al. (2020), 
       and can be replaced by transpose convolutional layers here.
     
     '''
+    
+    pool_size = 2
     
     X_skip = []; X_out = []; OUT_stack = []
     depth_backup = []
@@ -218,11 +223,9 @@ def u2net_2d_base(input_tensor,
     
     for i, f in enumerate(filter_num_down[1:]):
         
-        if pool:
-            X = MaxPooling2D(pool_size=(2, 2), name='{}_maxpool_{}'.format(name, i))(X)
-        else:
-            X = stride_conv(X, f, 2, activation=activation, batch_norm=batch_norm, name='{}_stridconv_{}'.format(name, i))
-            
+        X = encode_layer(X, f, pool_size, pool, activation=activation, 
+                         batch_norm=batch_norm, name='{}_encode_{}'.format(name, i))
+        
         X = RSU(X, filter_mid_num_down[i+1], f, depth=depth_-i, activation=activation, 
                 batch_norm=batch_norm, pool=pool, unpool=unpool, name='{}_down_{}'.format(name, i))
         
@@ -232,11 +235,9 @@ def u2net_2d_base(input_tensor,
 
     for i, f in enumerate(filter_4f_num):
         
-        if pool:
-            X = MaxPooling2D(pool_size=(2, 2), name='{}_maxpool_4f_{}'.format(name, i))(X)
-        else:
-            X = stride_conv(X, f, 2, activation=activation, batch_norm=batch_norm, name='{}_stridconv_4f_{}'.format(name, i))
-            
+        X = encode_layer(X, f, pool_size, pool, activation=activation, 
+                         batch_norm=batch_norm, name='{}_encode_4f_{}'.format(name, i))
+        
         X = RSU4F(X, filter_4f_mid_num[i], f, activation=activation, 
                   batch_norm=batch_norm, name='{}_down_4f_{}'.format(name, i))
         X_skip.append(X)
@@ -256,28 +257,28 @@ def u2net_2d_base(input_tensor,
     tensor_count = 0
     for i, f in enumerate(filter_4f_num):
         
-        if unpool:
-            X = UpSampling2D((2, 2), interpolation='bilinear', name='{}_unpool_4f_{}'.format(name, i))(X)
-        else:
-            X = Conv2DTranspose(f, 3, strides=(2, 2), padding='same', name='{}_transconv_4f_{}'.format(name, i))(X)
+        X = decode_layer(X, f, pool_size, unpool, 
+                         activation=activation, batch_norm=batch_norm, name='{}_decode_4f_{}'.format(name, i))
         
         X = concatenate([X, X_skip[tensor_count]], axis=-1, name='{}_concat_4f_{}'.format(name, i))
+        
         X = RSU4F(X, filter_4f_mid_num[i], f, activation=activation, 
                   batch_norm=batch_norm, name='{}_up_4f_{}'.format(name, i))
         X_out.append(X)
+        
         tensor_count += 1
     
     for i, f in enumerate(filter_num_up):
         
-        if unpool:
-            X = UpSampling2D((2, 2), interpolation='bilinear', name='{}_unpool_{}'.format(name, i))(X)
-        else:
-            X = Conv2DTranspose(f, 3, strides=(2, 2), padding='same', name='{}_transconv_{}'.format(name, i))(X)
+        X = decode_layer(X, f, pool_size, unpool, 
+                         activation=activation, batch_norm=batch_norm, name='{}_decode_{}'.format(name, i))
         
         X = concatenate([X, X_skip[tensor_count]], axis=-1, name='{}_concat_{}'.format(name, i))
+        
         X = RSU(X, filter_mid_num_up[i], f, depth=depth_backup[i], 
                 activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, name='{}_up_{}'.format(name, i))
         X_out.append(X)
+        
         tensor_count += 1
 
     return X_out
@@ -301,33 +302,36 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
     
     Input
     ----------
-        input_size: a tuple that defines the shape of input, e.g., (None, None, 3)
-        
-        filter_num_down: an iterable that defines the number of RSU output filters for each 
-                         downsampling level. E.g., [64, 128, 256, 512]
-                         the network depth is expected as `len(filter_num_down) + len(filter_4f_num)`         
-        filter_mid_num_down: an iterable that defines the number of RSU intermediate filters for each 
-                             downsampling level. E.g., [16, 32, 64, 128]
-                             *RSU intermediate and output filters must paired, i.e., list with the same length
-                             *RSU intermediate filters numbers are expected to be smaller than output filters numbers        
-        filter_mid_num_up: an iterable that defines the number of RSU intermediate filters for each 
-                             upsampling level. E.g., [16, 32, 64, 128]
-                             *RSU intermediate and output filters must paired, i.e., list with the same length
-                             *RSU intermediate filters numbers are expected to be smaller than output filters numbers 
-        filter_4f_num: an iterable that defines the number of RSU-4F output filters for each 
-                       downsampling and bottom level. E.g., [512, 512]
-                       the network depth is expected as `len(filter_num_down) + len(filter_4f_num)`       
-        filter_4f_mid_num: an iterable that defines the number of RSU-4F intermediate filters for each 
-                           downsampling and bottom level. E.g., [256, 256]
-                           *RSU-4F intermediate and output filters must paired, i.e., list with the same length
-                           *RSU-4F intermediate filters numbers are expected to be smaller than output filters numbers          
-        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., ReLU
-        output_activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces or 'Sigmoid'. 
-                           Default option is Softmax
-                           if None is received, then linear activation is applied.            
+        input_size: the size/shape of network input, e.g., `(128, 128, 3)`.
+        filter_num_down: a list that defines the number of RSU output filters for each 
+                         downsampling level. e.g., `[64, 128, 256, 512]`.
+                         the network depth is expected as `len(filter_num_down) + len(filter_4f_num)`                         
+        filter_mid_num_down: a list that defines the number of RSU intermediate filters for each 
+                             downsampling level. e.g., `[16, 32, 64, 128]`.
+                             * RSU intermediate and output filters must paired, i.e., list with the same length.
+                             * RSU intermediate filters numbers are expected to be smaller than output filters numbers.
+        filter_mid_num_up: a list that defines the number of RSU intermediate filters for each 
+                           upsampling level. e.g., `[16, 32, 64, 128]`.
+                           * RSU intermediate and output filters must paired, i.e., list with the same length.
+                           * RSU intermediate filters numbers are expected to be smaller than output filters numbers.
+        filter_4f_num: a list that defines the number of RSU-4F output filters for each 
+                       downsampling and bottom level. e.g., `[512, 512]`.
+                       the network depth is expected as `len(filter_num_down) + len(filter_4f_num)`.
+        filter_4f_mid_num: a list that defines the number of RSU-4F intermediate filters for each 
+                           downsampling and bottom level. e.g., `[256, 256]`.
+                           * RSU-4F intermediate and output filters must paired, i.e., list with the same length.
+                           * RSU-4F intermediate filters numbers are expected to be smaller than output filters numbers.         
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
+        output_activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interface or 'Sigmoid'.
+                           Default option is 'Softmax'.
+                           if None is received, then linear activation is applied.           
         batch_norm: True for batch normalization.
-        pool: True for maxpooling, False for strided convolutional layers.
-        unpool: True for unpooling (i.e., reflective padding), False for transpose convolutional layers.  
+        pool: True or 'max' for MaxPooling2D.
+              'ave' for AveragePooling2D.
+              False for strided conv + batch norm + activation.
+        unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
+                'nearest' for Upsampling2D with nearest interpolation.
+                False for Conv2DTranspose + batch norm + activation.  
         deep_supervision: True for a model that supports deep supervision. Details see Qin et al. (2020).
         name: prefix of the created keras layers.
         
@@ -336,7 +340,7 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
         model: a keras model.
     
     * Automated mode will produce a slightly larger network, different from that of Qin et al. (2020).
-    * Dilation rates of RSU4F layers are fixed to [1, 2, 4, 8].
+    * Dilation rates of RSU4F layers are fixed to `[1, 2, 4, 8]`.
     * The default output activation is sigmoid, consistent with Qin et al. (2020).
     * Downsampling is achieved through maxpooling and can be replaced by strided convolutional layers here.
     * Upsampling is achieved through bilinear interpolation and can be replaced by transpose convolutional layers here.
@@ -394,29 +398,30 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
     X_out = X_out[::-1]
     L_out = len(X_out)
     
-    D = X_out[0]
-    D = CONV_output(D, n_labels, kernel_size=3, activation=output_activation, 
+    X = CONV_output(X_out[0], n_labels, kernel_size=3, activation=output_activation, 
                     name='{}_output_sup0'.format(name))
-    OUT_stack.append(D)
+    OUT_stack.append(X)
     
-    for i in range(L_out-1):
-        pool_size = 2**(i+1)
-        X = Conv2D(n_labels, 3, padding='same', name='{}_output_conv_{}'.format(name, i))(X_out[i+1])
+    for i in range(1, L_out-1):
         
-        if unpool:
-            D = UpSampling2D((pool_size, pool_size), interpolation='bilinear', name='{}_output_sup{}'.format(name, i+1))(X)
-        else:
-            D = Conv2DTranspose(n_labels, 3, strides=(pool_size, pool_size), padding='same', name='{}_output_sup{}'.format(name, i+1))(X)
+        pool_size = 2**(i)
+        
+        X = Conv2D(n_labels, 3, padding='same', name='{}_output_conv_{}'.format(name, i))(X_out[i])
+        
+        X = decode_layer(X, n_labels, pool_size, unpool, 
+                         activation=None, batch_norm=False, name='{}_sup{}'.format(name, i))
         
         if output_activation:
             if output_activation == 'Sigmoid':
-                D = Activation('sigmoid', name='{}_output_sup{}_activation'.format(name, i+1))(D)
+                X = Activation('sigmoid', name='{}_output_sup{}_activation'.format(name, i))(X)
             else:
                 activation_func = eval(output_activation)
-                D = activation_func(name='{}_output_sup{}_activation'.format(name, i+1))(D)
-        OUT_stack.append(D)
+                X = activation_func(name='{}_output_sup{}_activation'.format(name, i))(X)
+                
+        OUT_stack.append(X)
         
     D = concatenate(OUT_stack, axis=-1, name='{}_output_concat'.format(name))
+    
     D = CONV_output(D, n_labels, kernel_size=1, activation=output_activation, 
                     name='{}_output_final'.format(name))
     
@@ -426,13 +431,19 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
         print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows (the last one is the final output):')
         
         if output_activation == None:
-            for i in range(L_out):
-                print('\t{}_output_sup{}'.format(name, i))
+            if unpool is False:
+                for i in range(L_out):
+                    print('\t{}_output_sup{}_trans_conv'.format(name, i))
+            else:
+                for i in range(L_out):
+                    print('\t{}_output_sup{}_unpool'.format(name, i))
+                
             print('\t{}_output_final'.format(name))
         
         else:        
             for i in range(L_out):
                 print('\t{}_output_sup{}_activation'.format(name, i))
+                
             print('\t{}_output_final_activation'.format(name))
             
         model = Model([IN,], OUT_stack)

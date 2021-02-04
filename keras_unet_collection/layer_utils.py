@@ -4,47 +4,131 @@ from __future__ import absolute_import
 from keras_unet_collection.activations import GELU, Snake
 from tensorflow import expand_dims
 from tensorflow.compat.v1 import image
-from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, Conv2DTranspose, GlobalAveragePooling2D, DepthwiseConv2D, Lambda
+from tensorflow.keras.layers import MaxPooling2D, AveragePooling2D, UpSampling2D, Conv2DTranspose, GlobalAveragePooling2D
+from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Lambda
 from tensorflow.keras.layers import BatchNormalization, Activation, concatenate, multiply, add
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU, Softmax
 
-
-def stride_conv(X, channel, pool_size=2, activation='ReLU', 
-                batch_norm=False, name='stride_conv'):
+def decode_layer(X, channel, pool_size, unpool, 
+                 activation='ReLU', batch_norm=False, name='decode'):
     '''
-    stride convolutional layer --> batch normalization --> Activation
+    An overall decode layer, based on either upsampling or trans conv.
     
-    stride_conv(X, channel, pool_size=2, activation='ReLU', 
-                batch_norm=False, name='stride_conv')
+    decode_layer(X, channel, pool_size, unpool, 
+                 activation='ReLU', batch_norm=False, name='decode')
     
     Input
     ----------
-        X: input tensor.
-        channel: number of convolution filters.
-        pool_size: number of stride.
+        X: input tensor
+        pool_size: the decoding factor
+        channel: (for trans conv only) number of convolution filters
+        unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
+                'nearest' for Upsampling2D with nearest interpolation.
+                False for Conv2DTranspose + batch norm + activation.
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU.
         batch_norm: True for batch normalization, False otherwise.
         name: prefix of the created keras layers.
         
     Output
     ----------
-        X: output tensor.
+        X: output tensor
+        
     '''
+    # parsers
+    if unpool is False:
+        # trans conv configurations
+        bias_flag = not batch_norm
     
-    bias_flag = not batch_norm
+    elif unpool == 'nearest':
+        # upsample2d configurations
+        unpool = True
+        interp = 'nearest'
     
-    # linear convolution with strides
-    X = Conv2D(channel, pool_size, strides=(pool_size, pool_size), 
-                            padding='valid', use_bias=bias_flag, name='{}_stride_conv'.format(name))(X)
+    elif (unpool is True) or (unpool == 'bilinear'):
+        # upsample2d configurations
+        unpool = True
+        interp = 'bilinear'
     
-    # batch normalization
-    if batch_norm:
-        X = BatchNormalization(axis=3, name='{}_bn'.format(name))(X)
+    else:
+        raise ValueError('Invalid unpool keyword')
+        
+    if unpool:
+        X = UpSampling2D(size=(pool_size, pool_size), interpolation=interp, name='{}_unpool'.format(name))(X)
+    else:
+        X = Conv2DTranspose(channel, pool_size, strides=(pool_size, pool_size), 
+                            padding='same', name='{}_trans_conv'.format(name))(X)
+        
+        # batch normalization
+        if batch_norm:
+            X = BatchNormalization(axis=3, name='{}_bn'.format(name))(X)
+            
+        # activation
+        if activation is not None:
+            activation_func = eval(activation)
+            X = activation_func(name='{}_activation'.format(name))(X)
+        
+    return X
+
+def encode_layer(X, channel, pool_size, pool, activation='ReLU', 
+                 batch_norm=False, name='encode'):
+    '''
+    An overall encode layer, based on one of the 
+    (1) maxpooling2d, (2) averagepooling, (3) strided conv2d
     
-    # activation
-    activation_func = eval(activation)
-    X = activation_func(name='{}_activation'.format(name))(X)
+
+    encode_layer(X, channel, pool_size, pool, activation='ReLU', 
+                 batch_norm=False, name='encode')
     
+    Input
+    ----------
+        X: input tensor
+        pool_size: the encoding factor
+        channel: (for strided conv only) number of convolution filters
+        pool: True or 'max' for MaxPooling2D.
+              'ave' for AveragePooling2D.
+              False for strided conv + batch norm + activation.
+        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU.
+        batch_norm: True for batch normalization, False otherwise.
+        name: prefix of the created keras layers.
+        
+    Output
+    ----------
+        X: output tensor
+        
+    '''
+    # parsers
+    if (pool in [False, True, 'max', 'ave']) is not True:
+        raise ValueError('Invalid pool keyword')
+        
+    # maxpooling2d as default
+    if pool is True:
+        pool = 'max'
+        
+    elif pool is False:
+        # stride conv configurations
+        bias_flag = not batch_norm
+        activation_func = eval(activation)
+    
+    if pool == 'max':
+        X = MaxPooling2D(pool_size=(pool_size, pool_size), name='{}_maxpool'.format(name))(X)
+        
+    elif pool == 'ave':
+        X = AveragePooling2D(pool_size=(pool_size, pool_size), name='{}_avepool'.format(name))(X)
+        
+    else:
+        # linear convolution with strides
+        X = Conv2D(channel, pool_size, strides=(pool_size, pool_size), 
+                   padding='valid', use_bias=bias_flag, name='{}_stride_conv'.format(name))(X)
+        
+        # batch normalization
+        if batch_norm:
+            X = BatchNormalization(axis=3, name='{}_bn'.format(name))(X)
+            
+        # activation
+        if activation is not None:
+            activation_func = eval(activation)
+            X = activation_func(name='{}_activation'.format(name))(X)
+        
     return X
 
 def attention_gate(X, g, channel,  
@@ -63,7 +147,7 @@ def attention_gate(X, g, channel,
                  Oktay et al. (2018) did not specify (denoted as F_int).
                  intermediate channel is expected to be smaller than the input channel.
         activation: a nonlinear attnetion activation.
-                    The `sigma_1` in Oktay et al. 2018. Default is ReLU.
+                    The `sigma_1` in Oktay et al. 2018. Default is 'ReLU'.
         attention: 'add' for additive attention. 'multiply' for multiplicative attention.
                    Oktay et al. 2018 applied additive attention.
         name: prefix of the created keras layers.
@@ -318,8 +402,4 @@ def CONV_output(X, n_labels, kernel_size=1, activation='Softmax', name='conv_out
             X = activation_func(name='{}_activation'.format(name))(X)
             
     return X
-
-
-
-
 
