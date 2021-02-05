@@ -4,7 +4,7 @@
 [![PyPI license](https://img.shields.io/pypi/l/keras-unet-collection.svg)](https://pypi.org/project/keras-unet-collection/)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/yingkaisha/keras-unet-collection/graphs/commit-activity)
 
-The `tensorflow.keras` implementation of U-net, V-net, U-net++, R2U-net, Attention U-net, ResUnet-a, U^2-Net, and UNET 3+ with optional ImageNet backbones.
+The `tensorflow.keras` implementation of U-net, V-net, U-net++, R2U-net, Attention U-net, ResUnet-a, U^2-Net, and UNET 3+ with optional ImageNet-trained backbones.
 
 ----------
 
