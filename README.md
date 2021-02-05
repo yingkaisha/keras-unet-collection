@@ -44,7 +44,7 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, R2U-net, Attenti
 
 | `keras_unet_collection.losses` | Name | Reference |
 |:----------------|:----------------|:----------------|
-| `dice`          | Dice loss                      | |
+| `dice`          | Dice loss                      | [Sudre et al. (2017)](https://link.springer.com/chapter/10.1007/978-3-319-67558-9_28) |
 | `tversky`       | Tversky loss                   | [Hashemi et al. (2018)](https://ieeexplore.ieee.org/abstract/document/8573779) |
 | `focal_tversky` | Focal Tversky loss             | [Abraham et al. (2019)](https://ieeexplore.ieee.org/abstract/document/8759329) |
 | `triplet_1d`    | Semi-hard triplet loss (experimental) | |
