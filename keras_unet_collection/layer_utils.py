@@ -9,7 +9,7 @@ from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Lambda
 from tensorflow.keras.layers import BatchNormalization, Activation, concatenate, multiply, add
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU, Softmax
 
-def decode_layer(X, channel, pool_size, unpool, 
+def decode_layer(X, channel, pool_size, unpool, kernel_size='auto', 
                  activation='ReLU', batch_norm=False, name='decode'):
     '''
     An overall decode layer, based on either upsampling or trans conv.
@@ -24,7 +24,9 @@ def decode_layer(X, channel, pool_size, unpool,
         channel: (for trans conv only) number of convolution filters
         unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
                 'nearest' for Upsampling2D with nearest interpolation.
-                False for Conv2DTranspose + batch norm + activation.
+                False for Conv2DTranspose + batch norm + activation.           
+        kernel_size: size of convolution kernels. 
+                     If kernel_size='auto', then it equals to the `pool_size`.
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU.
         batch_norm: True for batch normalization, False otherwise.
         name: prefix of the created keras layers.
@@ -55,7 +57,10 @@ def decode_layer(X, channel, pool_size, unpool,
     if unpool:
         X = UpSampling2D(size=(pool_size, pool_size), interpolation=interp, name='{}_unpool'.format(name))(X)
     else:
-        X = Conv2DTranspose(channel, pool_size, strides=(pool_size, pool_size), 
+        if kernel_size == 'auto':
+            kernel_size = pool_size
+            
+        X = Conv2DTranspose(channel, kernel_size, strides=(pool_size, pool_size), 
                             padding='same', name='{}_trans_conv'.format(name))(X)
         
         # batch normalization
@@ -69,8 +74,8 @@ def decode_layer(X, channel, pool_size, unpool,
         
     return X
 
-def encode_layer(X, channel, pool_size, pool, activation='ReLU', 
-                 batch_norm=False, name='encode'):
+def encode_layer(X, channel, pool_size, pool, kernel_size='auto', 
+                 activation='ReLU', batch_norm=False, name='encode'):
     '''
     An overall encode layer, based on one of the 
     (1) maxpooling2d, (2) averagepooling, (3) strided conv2d
@@ -87,6 +92,8 @@ def encode_layer(X, channel, pool_size, pool, activation='ReLU',
         pool: True or 'max' for MaxPooling2D.
               'ave' for AveragePooling2D.
               False for strided conv + batch norm + activation.
+        kernel_size: size of convolution kernels. 
+                     If kernel_size='auto', then it equals to the `pool_size`.
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU.
         batch_norm: True for batch normalization, False otherwise.
         name: prefix of the created keras layers.
@@ -107,7 +114,6 @@ def encode_layer(X, channel, pool_size, pool, activation='ReLU',
     elif pool is False:
         # stride conv configurations
         bias_flag = not batch_norm
-        activation_func = eval(activation)
     
     if pool == 'max':
         X = MaxPooling2D(pool_size=(pool_size, pool_size), name='{}_maxpool'.format(name))(X)
@@ -116,8 +122,11 @@ def encode_layer(X, channel, pool_size, pool, activation='ReLU',
         X = AveragePooling2D(pool_size=(pool_size, pool_size), name='{}_avepool'.format(name))(X)
         
     else:
+        if kernel_size == 'auto':
+            kernel_size = pool_size
+        
         # linear convolution with strides
-        X = Conv2D(channel, pool_size, strides=(pool_size, pool_size), 
+        X = Conv2D(channel, kernel_size, strides=(pool_size, pool_size), 
                    padding='valid', use_bias=bias_flag, name='{}_stride_conv'.format(name))(X)
         
         # batch normalization
