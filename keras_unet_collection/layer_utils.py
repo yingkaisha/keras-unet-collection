@@ -9,19 +9,19 @@ from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Lambda
 from tensorflow.keras.layers import BatchNormalization, Activation, concatenate, multiply, add
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU, Softmax
 
-def decode_layer(X, channel, pool_size, unpool, kernel_size='auto', 
+def decode_layer(X, channel, pool_size, unpool, kernel_size=3, 
                  activation='ReLU', batch_norm=False, name='decode'):
     '''
     An overall decode layer, based on either upsampling or trans conv.
     
-    decode_layer(X, channel, pool_size, unpool, 
+    decode_layer(X, channel, pool_size, unpool, kernel_size=3,
                  activation='ReLU', batch_norm=False, name='decode')
     
     Input
     ----------
-        X: input tensor
-        pool_size: the decoding factor
-        channel: (for trans conv only) number of convolution filters
+        X: input tensor.
+        pool_size: the decoding factor.
+        channel: (for trans conv only) number of convolution filters.
         unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
                 'nearest' for Upsampling2D with nearest interpolation.
                 False for Conv2DTranspose + batch norm + activation.           
@@ -33,8 +33,10 @@ def decode_layer(X, channel, pool_size, unpool, kernel_size='auto',
         
     Output
     ----------
-        X: output tensor
-        
+        X: output tensor.
+    
+    * The defaut: `kernel_size=3`, is suitable for `pool_size=2`.
+    
     '''
     # parsers
     if unpool is False:
@@ -77,18 +79,17 @@ def decode_layer(X, channel, pool_size, unpool, kernel_size='auto',
 def encode_layer(X, channel, pool_size, pool, kernel_size='auto', 
                  activation='ReLU', batch_norm=False, name='encode'):
     '''
-    An overall encode layer, based on one of the 
-    (1) maxpooling2d, (2) averagepooling, (3) strided conv2d
+    An overall encode layer, based on one of the:
+    (1) max-pooling, (2) average-pooling, (3) strided conv2d.
     
-
-    encode_layer(X, channel, pool_size, pool, activation='ReLU', 
-                 batch_norm=False, name='encode')
+    encode_layer(X, channel, pool_size, pool, kernel_size='auto', 
+                 activation='ReLU', batch_norm=False, name='encode')
     
     Input
     ----------
-        X: input tensor
-        pool_size: the encoding factor
-        channel: (for strided conv only) number of convolution filters
+        X: input tensor.
+        pool_size: the encoding factor.
+        channel: (for strided conv only) number of convolution filters.
         pool: True or 'max' for MaxPooling2D.
               'ave' for AveragePooling2D.
               False for strided conv + batch norm + activation.
@@ -100,7 +101,7 @@ def encode_layer(X, channel, pool_size, pool, kernel_size='auto',
         
     Output
     ----------
-        X: output tensor
+        X: output tensor.
         
     '''
     # parsers
@@ -137,14 +138,14 @@ def encode_layer(X, channel, pool_size, pool, kernel_size='auto',
         if activation is not None:
             activation_func = eval(activation)
             X = activation_func(name='{}_activation'.format(name))(X)
-        
+            
     return X
 
 def attention_gate(X, g, channel,  
                    activation='ReLU', 
                    attention='add', name='att'):
     '''
-    Self-attention gate modified from Oktay et al. 2018
+    Self-attention gate modified from Oktay et al. 2018.
     
     attention_gate(X, g, channel,  activation='ReLU', attention='add', name='att')
     
@@ -157,7 +158,7 @@ def attention_gate(X, g, channel,
                  intermediate channel is expected to be smaller than the input channel.
         activation: a nonlinear attnetion activation.
                     The `sigma_1` in Oktay et al. 2018. Default is 'ReLU'.
-        attention: 'add' for additive attention. 'multiply' for multiplicative attention.
+        attention: 'add' for additive attention; 'multiply' for multiplicative attention.
                    Oktay et al. 2018 applied additive attention.
         name: prefix of the created keras layers.
         
