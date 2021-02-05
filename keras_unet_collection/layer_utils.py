@@ -198,8 +198,7 @@ def CONV_stack(X, channel, kernel_size=3, stack_num=2,
                dilation_rate=1, activation='ReLU', 
                batch_norm=False, name='conv_stack'):
     '''
-    Stacked convolutional layer:
-    ----------
+    Stacked convolutional layers:
     (Convolutional layer --> batch normalization --> Activation)*stack_num
     
     CONV_stack(X, channel, kernel_size=3, stack_num=2, dilation_rate=1, activation='ReLU', 
@@ -212,7 +211,7 @@ def CONV_stack(X, channel, kernel_size=3, stack_num=2,
         channel: number of convolution filters.
         kernel_size: size of 2-d convolution kernels.
         stack_num: number of stacked Conv2D-BN-Activation layers.
-        dilation_rate: option of dilated convolution kernel.
+        dilation_rate: optional dilated convolution kernel.
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU.
         batch_norm: True for batch normalization, False otherwise.
         name: prefix of the created keras layers.
@@ -246,17 +245,18 @@ def CONV_stack(X, channel, kernel_size=3, stack_num=2,
 
 def Res_CONV_stack(X, X_skip, channel, res_num, activation='ReLU', batch_norm=False, name='res_conv'):
     '''
-    Stacked convolutional layers with residual path
+    Stacked convolutional layers with residual path.
      
     Res_CONV_stack(X, X_skip, channel, res_num, activation='ReLU', batch_norm=False, name='res_conv')
      
     Input
     ----------
         X: input tensor.
-        X_skip: the tensor that does go into the residual path (usually it is a copy of X).
+        X_skip: the tensor that does go into the residual path 
+                can be a copy of X (e.g., the identity block of ResNet).
         channel: number of convolution filters.
         res_num: number of convolutional layers within the residual path.
-        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU.
+        activation: one of the `tensorflow.keras.layers` interface, e.g., 'ReLU'.
         batch_norm: True for batch normalization, False otherwise.
         name: prefix of the created keras layers.
         
@@ -287,8 +287,8 @@ def Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, dilation_rate=1, acti
         channel: number of convolution filters.
         kernel_size: size of 2-d convolution kernels.
         stack_num: number of stacked depthwise-pointwise layers.
-        dilation_rate: option of dilated convolution kernel.
-        activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU.
+        dilation_rate: optional dilated convolution kernel.
+        activation: one of the `tensorflow.keras.layers` interface, e.g., 'ReLU'.
         batch_norm: True for batch normalization, False otherwise.
         name: prefix of the created keras layers.
         
@@ -342,7 +342,7 @@ def ASPP_conv(X, channel, activation='ReLU', batch_norm=True, name='aspp'):
     ----------
         X: output tensor.
         
-    *dilation rates are assigned as 6, 9, 12.
+    * dilation rates are fixed to `[6, 9, 12]`.
     '''
     
     activation_func = eval(activation)
@@ -360,16 +360,18 @@ def ASPP_conv(X, channel, activation='ReLU', batch_norm=True, name='aspp'):
         
     b4 = activation_func(name='{}_conv_b4_activation'.format(name))(b4)
     
+    # <----- tensorflow v1 resize.
     b4 = Lambda(lambda X: image.resize(X, shape_before[1:3], method='bilinear', align_corners=True), 
                 name='{}_resize_b4'.format(name))(b4)
     
     b0 = Conv2D(channel, (1, 1), padding='same', use_bias=bias_flag, name='{}_conv_b0'.format(name))(X)
-    
+
     if batch_norm:
         b0 = BatchNormalization(name='{}_conv_b0_BN'.format(name))(b0)
         
     b0 = activation_func(name='{}_conv_b0_activation'.format(name))(b0)
-
+    
+    # dilation rates are fixed to `[6, 9, 12]`.
     b_r6 = Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, activation='ReLU', 
                         dilation_rate=6, batch_norm=True, name='{}_sepconv_r6'.format(name))
     b_r9 = Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, activation='ReLU', 
@@ -388,10 +390,11 @@ def CONV_output(X, n_labels, kernel_size=1, activation='Softmax', name='conv_out
     Input
     ----------
         X: input tensor.
-        n_labels: number of classification labels (larger than two).
+        n_labels: number of classification label(s).
         kernel_size: size of 2-d convolution kernels. Default is 1-by-1.
-        activation: one of the `tensorflow.keras.layers` interface. Default option is Softmax.
-                    if None is received, then linear activation is applied, that said, not activation.
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interface or 'Sigmoid'.
+                    Default option is 'Softmax'.
+                    if None is received, then linear activation is applied.
         name: prefix of the created keras layers.
         
     Output
