@@ -15,3 +15,4 @@
 | 0.0.13   | 2021-01-25    | (1) Bugfix.<br />(2) New feature. Backbone models for Attention Unet. |
 | 0.0.14   | 2021-01-30    | Python script cleaning and documentation fix. |
 | 0.0.15   | 2021-02-03    | (1) Bugfix.<br />(2) New feature. More `pool` and `unpool` options. |
+| 0.0.16   | 2021-02-05    | (1) Bugfix.<br />(2) New feature. Loss functions. |
