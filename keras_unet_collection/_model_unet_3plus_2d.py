@@ -358,7 +358,7 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
 
     else:
         OUT = CONV_output(X_decoder[0], n_labels, kernel_size=3, 
-                          activation=activation, name='{}_output_final'.format(name))
+                          activation=output_activation, name='{}_output_final'.format(name))
 
         model = Model([IN,], [OUT,])
         

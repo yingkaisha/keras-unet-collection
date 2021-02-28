@@ -170,9 +170,6 @@ def resunet_a_2d_base(input_tensor, filter_num, dilation_num,
         
         X = encode_layer(X, f, pool_size, pool, activation=activation, 
                          batch_norm=batch_norm, name='{}_down{}'.format(name, i))
-        #X = Conv2D(f, 1, 2, dilation_rate=1, padding='same', name='{}_down{}'.format(name, i))(X)
-        #X = activation_func(name='{}_down{}_activation'.format(name, i))(X)
-
         X = ResUNET_a_block(X, f, kernel_size=3, dilation_num=dilation_[ind_], activation=activation, 
                             batch_norm=batch_norm, name='{}_resblock_{}'.format(name, ind_))
         X_skip.append(X)
