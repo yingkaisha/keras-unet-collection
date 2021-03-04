@@ -125,7 +125,7 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
 
                 i_real = i + depth_encode
 
-                X = UNET_left(X, filter_num[i_real], stack_num=stack_num_down, activation=activation, pool=pool, 
+                X = UNET_left(X, filter_num_down[i_real], stack_num=stack_num_down, activation=activation, pool=pool, 
                               batch_norm=batch_norm, name='{}_down{}'.format(name, i_real+1))
                 X_encoder.append(X)
 
