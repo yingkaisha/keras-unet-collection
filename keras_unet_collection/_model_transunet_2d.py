@@ -42,23 +42,36 @@ class ViT_embedding(Layer):
         encoded = self.proj(patch) + self.pos_embed(pos)
         return encoded
     
-def ViT_block(V, num_heads, key_dim, filter_num_MLP):
+def ViT_MLP(X, filter_num, activation, name='MLP'):
+    '''
+    
+    '''
+    activation_func = eval(activation)
+    
+    for f in filter_num:
+        X = Dense(f, name='{}_dense')(X)
+        X = activation_func(name='{}_activation')(X)
+        
+    return X
+    
+def ViT_block(V, num_heads, key_dim, filter_num_MLP, name='ViT'):
     '''
     
     '''
     # Multi-head self-attention
     V_atten = V # <--- skip
-    V_atten = LayerNormalization()(V_atten)
-    V_atten = MultiHeadAttention(num_heads=num_heads, key_dim=key_dim)(V_atten, V_atten)
+    V_atten = LayerNormalization(name='{}_layer_norm_1'.format(name))(V_atten)
+    V_atten = MultiHeadAttention(num_heads=num_heads, key_dim=key_dim, 
+                                 name='{}_atten'.format(name))(V_atten, V_atten)
     # Skip connection
-    V_add = add([V_atten, V]) # <--- skip
+    V_add = add([V_atten, V], name='{}_skip_1'.format(name)) # <--- skip
     
     # MLP
     V_MLP = V_add # <--- skip
-    V_MLP = LayerNormalization()(V_MLP)
-    V_MLP = ViT_MLP(V_MLP, filter_num_MLP)
+    V_MLP = LayerNormalization(name='{}_layer_norm_2'.format(name))(V_MLP)
+    V_MLP = ViT_MLP(V_MLP, filter_num_MLP, name='{}_mlp'.format(name))
     # Skip connection
-    V_out = add([V_MLP, V_add]) # <--- skip
+    V_out = add([V_MLP, V_add], name='{}_skip_2'.format(name)) # <--- skip
     
     return V_out
 
@@ -136,8 +149,8 @@ def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
     X = ViT_embedding(num_patches, proj_dim)(X)
     
     # stacked ViTs 
-    for _ in range(num_transformer):
-        X = ViT_block(X, num_heads, key_dim, filter_num_MLP)
+    for i in range(num_transformer):
+        X = ViT_block(X, num_heads, key_dim, filter_num_MLP, name='{}_ViT_{}'.format(name, i))
         
     # reshape patches to feature maps
     X = tf.reshape(X, (-1, encode_size, encode_size, proj_dim))
@@ -166,3 +179,41 @@ def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
         
     return X
 
+def transunet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_up=2,
+                 proj_dim=768, num_mlp = 3072, num_heads=12, num_transformer=12,
+                 activation='ReLU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, name='transunet'):
+    '''
+    transUNET
+    
+    ----------
+    Chen, J., Lu, Y., Yu, Q., Luo, X., Adeli, E., Wang, Y., Lu, L., Yuille, A.L. and Zhou, Y., 2021. 
+    Transunet: Transformers make strong encoders for medical image segmentation. arXiv preprint arXiv:2102.04306.
+    
+    Input
+    ----------
+
+        
+    Output
+    ----------
+
+    
+    '''
+    activation_func = eval(activation)
+    
+    if backbone is not None:
+        bach_norm_checker(backbone, batch_norm)
+        
+    IN = Input(input_size)
+    
+    # base    
+    X = transunet_2d_base(IN, filter_num, stack_num_down=stack_num_down, stack_num_up=stack_num_up, 
+                          proj_dim=proj_dim, num_mlp=num_mlp, num_heads=num_heads, num_transformer=num_transformer,
+                          activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, name=name)
+    
+    # output layer
+    OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
+    
+    # functional API model
+    model = Model(inputs=[IN,], outputs=[OUT,], name='{}_model'.format(name))
+    
+    return model
