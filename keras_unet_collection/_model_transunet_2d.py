@@ -42,9 +42,9 @@ class ViT_embedding(Layer):
         encoded = self.proj(patch) + self.pos_embed(pos)
         return encoded
     
-def ViT_MLP(X, filter_num, activation, name='MLP'):
+def ViT_MLP(X, filter_num, activation='GELU', name='MLP'):
     '''
-    
+
     '''
     activation_func = eval(activation)
     
@@ -54,7 +54,7 @@ def ViT_MLP(X, filter_num, activation, name='MLP'):
         
     return X
     
-def ViT_block(V, num_heads, key_dim, filter_num_MLP, name='ViT'):
+def ViT_block(V, num_heads, key_dim, filter_num_MLP, activation='GELU', name='ViT'):
     '''
     
     '''
@@ -69,7 +69,7 @@ def ViT_block(V, num_heads, key_dim, filter_num_MLP, name='ViT'):
     # MLP
     V_MLP = V_add # <--- skip
     V_MLP = LayerNormalization(name='{}_layer_norm_2'.format(name))(V_MLP)
-    V_MLP = ViT_MLP(V_MLP, filter_num_MLP, name='{}_mlp'.format(name))
+    V_MLP = ViT_MLP(V_MLP, filter_num_MLP, activation, name='{}_mlp'.format(name))
     # Skip connection
     V_out = add([V_MLP, V_add], name='{}_skip_2'.format(name)) # <--- skip
     
@@ -78,7 +78,7 @@ def ViT_block(V, num_heads, key_dim, filter_num_MLP, name='ViT'):
 
 def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2, 
                       proj_dim=768, num_mlp = 3072, num_heads=12, num_transformer=12,
-                      activation='ReLU', batch_norm=False, pool=True, unpool=True, name='transunet'):
+                      activation='ReLU', mlp_activation='GELU', batch_norm=False, pool=True, unpool=True, name='transunet'):
     '''
     The base of transUNET.
     
@@ -150,7 +150,8 @@ def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
     
     # stacked ViTs 
     for i in range(num_transformer):
-        X = ViT_block(X, num_heads, key_dim, filter_num_MLP, name='{}_ViT_{}'.format(name, i))
+        X = ViT_block(X, num_heads, key_dim, filter_num_MLP, activation=mlp_activation, 
+                      name='{}_ViT_{}'.format(name, i))
         
     # reshape patches to feature maps
     X = tf.reshape(X, (-1, encode_size, encode_size, proj_dim))
@@ -181,7 +182,8 @@ def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
 
 def transunet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_up=2,
                  proj_dim=768, num_mlp = 3072, num_heads=12, num_transformer=12,
-                 activation='ReLU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, name='transunet'):
+                 activation='ReLU', mlp_activation='GELU', output_activation='Softmax', 
+                 batch_norm=False, pool=True, unpool=True, name='transunet'):
     '''
     transUNET
     
@@ -199,16 +201,14 @@ def transunet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_u
     
     '''
     activation_func = eval(activation)
-    
-    if backbone is not None:
-        bach_norm_checker(backbone, batch_norm)
         
     IN = Input(input_size)
     
     # base    
     X = transunet_2d_base(IN, filter_num, stack_num_down=stack_num_down, stack_num_up=stack_num_up, 
                           proj_dim=proj_dim, num_mlp=num_mlp, num_heads=num_heads, num_transformer=num_transformer,
-                          activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, name=name)
+                          activation=activation, mlp_activation=mlp_activation, batch_norm=batch_norm, 
+                          pool=pool, unpool=unpool, name=name)
     
     # output layer
     OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
