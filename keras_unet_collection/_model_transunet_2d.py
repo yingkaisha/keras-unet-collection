@@ -12,6 +12,19 @@ from tensorflow.keras.layers import MultiHeadAttention, LayerNormalization, Dens
 class ViT_patch_gen(Layer):
     '''
     
+    ----------
+    Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Unterthiner, 
+    T., Dehghani, M., Minderer, M., Heigold, G., Gelly, S. and Uszkoreit, J., 2020. 
+    An image is worth 16x16 words: Transformers for image recognition at scale. 
+    arXiv preprint arXiv:2010.11929.
+    
+    Input
+    ----------
+
+        
+    Output
+    ----------
+    
     '''
     def __init__(self, patch_size):
         super(ViT_patch_gen, self).__init__()
@@ -30,6 +43,19 @@ class ViT_patch_gen(Layer):
 class ViT_embedding(Layer):
     '''
     
+    ----------
+    Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Unterthiner, 
+    T., Dehghani, M., Minderer, M., Heigold, G., Gelly, S. and Uszkoreit, J., 2020. 
+    An image is worth 16x16 words: Transformers for image recognition at scale. 
+    arXiv preprint arXiv:2010.11929.
+    
+    Input
+    ----------
+
+        
+    Output
+    ----------
+    
     '''
     def __init__(self, num_patches, proj_dim):
         super(ViT_embedding, self).__init__()
@@ -44,7 +70,21 @@ class ViT_embedding(Layer):
     
 def ViT_MLP(X, filter_num, activation='GELU', name='MLP'):
     '''
+    The MLP block of ViT.
+    
+    ----------
+    Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Unterthiner, 
+    T., Dehghani, M., Minderer, M., Heigold, G., Gelly, S. and Uszkoreit, J., 2020. 
+    An image is worth 16x16 words: Transformers for image recognition at scale. 
+    arXiv preprint arXiv:2010.11929.
+    
+    Input
+    ----------
 
+        
+    Output
+    ----------
+    
     '''
     activation_func = eval(activation)
     
@@ -56,6 +96,19 @@ def ViT_MLP(X, filter_num, activation='GELU', name='MLP'):
     
 def ViT_block(V, num_heads, key_dim, filter_num_MLP, activation='GELU', name='ViT'):
     '''
+    
+    ----------
+    Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Unterthiner, 
+    T., Dehghani, M., Minderer, M., Heigold, G., Gelly, S. and Uszkoreit, J., 2020. 
+    An image is worth 16x16 words: Transformers for image recognition at scale. 
+    arXiv preprint arXiv:2010.11929.
+    
+    Input
+    ----------
+
+        
+    Output
+    ----------
     
     '''
     # Multi-head self-attention
