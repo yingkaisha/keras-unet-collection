@@ -140,7 +140,7 @@ def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
                       activation='ReLU', mlp_activation='GELU', batch_norm=False, pool=True, unpool=True, 
                       backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='transunet'):
     '''
-    The base of transUNET.
+    The base of transUNET with an optional ImageNet-trained backbone.
     
     ----------
     Chen, J., Lu, Y., Yu, Q., Luo, X., Adeli, E., Wang, Y., Lu, L., Yuille, A.L. and Zhou, Y., 2021. 
@@ -148,11 +148,46 @@ def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
     
     Input
     ----------
-
+        input_tensor: the input tensor of the base, e.g., `keras.layers.Inpyt((None, None, 3))`.
+        filter_num: a list that defines the number of filters for each \
+                    down- and upsampling levels. e.g., `[64, 128, 256, 512]`.
+                    The depth is expected as `len(filter_num)`.
+        stack_num_down: number of convolutional layers per downsampling level/block. 
+        stack_num_up: number of convolutional layers (after concatenation) per upsampling level/block.
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
+        batch_norm: True for batch normalization.
+        pool: True or 'max' for MaxPooling2D.
+              'ave' for AveragePooling2D.
+              False for strided conv + batch norm + activation.
+        unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
+                'nearest' for Upsampling2D with nearest interpolation.
+                False for Conv2DTranspose + batch norm + activation.
+        name: prefix of the created keras model and its layers.
+        
+        ---------- (keywords of ViT) ----------
+        proj_dim: number of embedded dimensions.
+        num_mlp: number of MLP nodes.
+        num_heads: number of attention heads.
+        num_transformer: number of stacked ViTs.
+        mlp_activation: activation of MLP layers.
+        
+        ---------- (keywords of backbone options) ----------
+        backbone_name: the bakcbone model name. Should be one of the `tensorflow.keras.applications` class.
+                       None (default) means no backbone. 
+                       Currently supported backbones are:
+                       (1) VGG16, VGG19
+                       (2) ResNet50, ResNet101, ResNet152
+                       (3) ResNet50V2, ResNet101V2, ResNet152V2
+                       (4) DenseNet121, DenseNet169, DenseNet201
+                       (5) EfficientNetB[0-7]
+        weights: one of None (random initialization), 'imagenet' (pre-training on ImageNet), 
+                 or the path to the weights file to be loaded.
+        freeze_backbone: True for a frozen backbone.
+        freeze_batch_norm: False for not freezing batch normalization layers.
         
     Output
     ----------
-
+        X: output tensor.
     
     '''
     activation_func = eval(activation)
@@ -290,7 +325,8 @@ def transunet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_u
                  activation='ReLU', mlp_activation='GELU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, 
                  backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='transunet'):
     '''
-    transUNET
+    TransUNET with an optional ImageNet-trained bakcbone.
+    
     
     ----------
     Chen, J., Lu, Y., Yu, Q., Luo, X., Adeli, E., Wang, Y., Lu, L., Yuille, A.L. and Zhou, Y., 2021. 
@@ -298,13 +334,53 @@ def transunet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_u
     
     Input
     ----------
-
+        input_size: the size/shape of network input, e.g., `(128, 128, 3)`.
+        filter_num: a list that defines the number of filters for each \
+                    down- and upsampling levels. e.g., `[64, 128, 256, 512]`.
+                    The depth is expected as `len(filter_num)`.
+        n_labels: number of output labels.
+        stack_num_down: number of convolutional layers per downsampling level/block. 
+        stack_num_up: number of convolutional layers (after concatenation) per upsampling level/block.
+        activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
+        output_activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interface or 'Sigmoid'.
+                           Default option is 'Softmax'.
+                           if None is received, then linear activation is applied.
+        batch_norm: True for batch normalization.
+        pool: True or 'max' for MaxPooling2D.
+              'ave' for AveragePooling2D.
+              False for strided conv + batch norm + activation.
+        unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
+                'nearest' for Upsampling2D with nearest interpolation.
+                False for Conv2DTranspose + batch norm + activation.                 
+        name: prefix of the created keras model and its layers.
+        
+        ---------- (keywords of ViT) ----------
+        proj_dim: number of embedded dimensions.
+        num_mlp: number of MLP nodes.
+        num_heads: number of attention heads.
+        num_transformer: number of stacked ViTs.
+        mlp_activation: activation of MLP layers.
+        
+        ---------- (keywords of backbone options) ----------
+        backbone_name: the bakcbone model name. Should be one of the `tensorflow.keras.applications` class.
+                       None (default) means no backbone. 
+                       Currently supported backbones are:
+                       (1) VGG16, VGG19
+                       (2) ResNet50, ResNet101, ResNet152
+                       (3) ResNet50V2, ResNet101V2, ResNet152V2
+                       (4) DenseNet121, DenseNet169, DenseNet201
+                       (5) EfficientNetB[0-7]
+        weights: one of None (random initialization), 'imagenet' (pre-training on ImageNet), 
+                 or the path to the weights file to be loaded.
+        freeze_backbone: True for a frozen backbone.
+        freeze_batch_norm: False for not freezing batch normalization layers.
         
     Output
     ----------
-
+        model: a keras model.
     
     '''
+    
     activation_func = eval(activation)
         
     IN = Input(input_size)
