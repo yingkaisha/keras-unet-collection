@@ -339,11 +339,11 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
     ----------
         model: a keras model.
     
-    * Automated mode will produce a slightly larger network, different from that of Qin et al. (2020).
+    * Automated hyper-parameter estimation will produce a slightly larger network, different from that of Qin et al. (2020).
     * Dilation rates of RSU4F layers are fixed to `[1, 2, 4, 8]`.
-    * The default output activation is sigmoid, consistent with Qin et al. (2020).
-    * Downsampling is achieved through maxpooling and can be replaced by strided convolutional layers here.
-    * Upsampling is achieved through bilinear interpolation and can be replaced by transpose convolutional layers here.
+    * The default output activation is sigmoid, the same as in Qin et al. (2020).
+    * Downsampling is achieved through maxpooling and can be replaced by strided convolutional layers.
+    * Upsampling is achieved through bilinear interpolation and can be replaced by transpose convolutional layers.
     
     '''
     
@@ -402,7 +402,7 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
                     name='{}_output_sup0'.format(name))
     OUT_stack.append(X)
     
-    for i in range(1, L_out-1):
+    for i in range(1, L_out):
         
         pool_size = 2**(i)
         
@@ -428,7 +428,7 @@ def u2net_2d(input_size, n_labels, filter_num_down, filter_num_up='auto', filter
     if deep_supervision:
         
         OUT_stack.append(D)
-        print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows (the last one is the final output):')
+        print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows ("sup0" is the shallowest supervision layer;\n"final" is the final output layer):\n')
         
         if output_activation == None:
             if unpool is False:
