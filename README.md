@@ -14,7 +14,7 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, UNET 3+, Attenti
 
 * Pre-trained ImageNet backbones are supported for U-net, U-net++, UNET 3+, Attention U-net, and TransUNET.
 * Deep supervision is supported for U-net++, UNET 3+, and U^2-Net.
-* See the [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/user_guid_models.ipynb) for other options and use cases.
+* See the [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/user_guide_models.ipynb) for other options and use cases.
 
 | `keras_unet_collection.models` | Name | Reference |
 |:---------------|:----------------|:----------------|
