@@ -7,7 +7,12 @@ from keras_unet_collection._model_unet_2d import UNET_left, UNET_right
 
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import MultiHeadAttention, LayerNormalization, Dense, Embedding
+from tensorflow.keras.layers import Layer, MultiHeadAttention, LayerNormalization, Dense, Embedding
+
+from tensorflow import range as tf_range
+from tensorflow import shape as tf_shape
+from tensorflow import reshape as tf_reshape
+from tensorflow.image import extract_patches
 
 class ViT_patch_gen(Layer):
     '''
@@ -31,13 +36,13 @@ class ViT_patch_gen(Layer):
         self.patch_size = patch_size
 
     def call(self, images):
-        batch_size = tf.shape(images)[0]
-        patches = tf.image.extract_patches(images=images,
+        batch_size = tf_shape(images)[0]
+        patches = extract_patches(images=images,
                                            sizes=[1, self.patch_size, self.patch_size, 1],
                                            strides=[1, self.patch_size, self.patch_size, 1],
                                            rates=[1, 1, 1, 1], padding='VALID',)
         patch_dim = patches.shape[-1]
-        patches = tf.reshape(patches, [batch_size, -1, patch_dim])
+        patches = tf_reshape(patches, [batch_size, -1, patch_dim])
         return patches
     
 class ViT_embedding(Layer):
@@ -64,7 +69,7 @@ class ViT_embedding(Layer):
         self.pos_embed = Embedding(input_dim=num_patches, output_dim=proj_dim)
 
     def call(self, patch):
-        pos = tf.range(start=0, limit=self.num_patches, delta=1)
+        pos = tf_range(start=0, limit=self.num_patches, delta=1)
         encoded = self.proj(patch) + self.pos_embed(pos)
         return encoded
     
@@ -88,9 +93,9 @@ def ViT_MLP(X, filter_num, activation='GELU', name='MLP'):
     '''
     activation_func = eval(activation)
     
-    for f in filter_num:
-        X = Dense(f, name='{}_dense')(X)
-        X = activation_func(name='{}_activation')(X)
+    for i, f in enumerate(filter_num):
+        X = Dense(f, name='{}_dense_{}'.format(name, i))(X)
+        X = activation_func(name='{}_activation_{}'.format(name, i))(X)
         
     return X
     
@@ -207,7 +212,7 @@ def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
                       name='{}_ViT_{}'.format(name, i))
         
     # reshape patches to feature maps
-    X = tf.reshape(X, (-1, encode_size, encode_size, proj_dim))
+    X = tf_reshape(X, (-1, encode_size, encode_size, proj_dim))
     
     # 1-by-1 linear transformation to adjust the number of channels
     X = Conv2D(filter_num[-1], 1, padding='valid', use_bias=False, name='{}_conv_trans_after'.format(name))(X)
