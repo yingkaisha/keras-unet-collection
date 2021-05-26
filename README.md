@@ -4,13 +4,15 @@
 [![PyPI license](https://img.shields.io/pypi/l/keras-unet-collection.svg)](https://pypi.org/project/keras-unet-collection/)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/yingkaisha/keras-unet-collection/graphs/commit-activity)
 
-The `tensorflow.keras` implementation of U-net, V-net, U-net++, R2U-net, Attention U-net, ResUnet-a, U^2-Net, and UNET 3+ with optional ImageNet-trained backbones.
+The `tensorflow.keras` implementation of U-net, V-net, U-net++, UNET 3+, Attention U-net, R2U-net, ResUnet-a, U^2-Net, and TransUNET with optional ImageNet-trained backbones.
+
+(Dependencies are changed to TensorFlow 2.5.0; version 0.1.0)
 
 ----------
 
 `keras_unet_collection.models` contains functions that configure keras models with hyper-parameter options. 
 
-* Pre-trained ImageNet backbones are supported for U-net, U-net++, Attention U-net, and UNET 3+.
+* Pre-trained ImageNet backbones are supported for U-net, U-net++, UNET 3+, Attention U-net, and TransUNET.
 * Deep supervision is supported for U-net++, UNET 3+, and U^2-Net.
 * See the [User guide](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/user_guid_models.ipynb) for other options and use cases.
 
@@ -24,6 +26,7 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, R2U-net, Attenti
 | `resunet_a_2d` | ResUnet-a       | [Diakogiannis et al. (2020)](https://doi.org/10.1016/j.isprsjprs.2020.01.013) |
 | `u2net_2d`     | U^2-Net         | [Qin et al. (2020)](https://arxiv.org/abs/2005.09007) |
 | `unet_3plus_2d` | UNET 3+        | [Huang et al. (2020)](https://arxiv.org/abs/2004.08790) |
+| `transunet_2d` | TransUNET       | [Chen et al. (2021)](https://arxiv.org/abs/2102.04306) |
 
 ----------
 
@@ -31,7 +34,7 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, R2U-net, Attenti
 
 | ` keras_unet_collection.base` | Notes |
 |:-----------------------------------|:------|
-| `unet_2d_base`, `vnet_2d_base`, `unet_plus_2d_base`, `r2_unet_2d_base`, `att_unet_2d_base`, `resunet_a_2d_base`, `u2net_2d_base`, `unet_3plus_2d_base` | Functions that accept an input tensor and hyper-parameters of the corresponded model, and produce output tensors of the base architecture. |
+| `unet_2d_base`, `vnet_2d_base`, `unet_plus_2d_base`, `unet_3plus_2d_base`, `att_unet_2d_base`, `r2_unet_2d_base`, `resunet_a_2d_base`, `u2net_2d_base`, `transunet_2d_base` | Functions that accept an input tensor and hyper-parameters of the corresponded model, and produce output tensors of the base architecture. |
 
 ----------
 
@@ -60,8 +63,6 @@ from keras_unet_collection import models
 ```
 * **Note**: Currently supported backbone models are: `VGG[16,19]`, `ResNet[50,101,152]`, `ResNet[50,101,152]V2`, `DenseNet[121,169,201]`, and `EfficientNetB[0-7]`. See [Keras Applications](https://keras.io/api/applications/) for details. 
 
-* **Note**: This package is planned for major updates. For versions prior to 0.1.0, backward compatibility is not ensured.
-
 * **Note**: Neural networks produced by this package may not be compatible with other pre-trained models of the same name. Training from scratch is recommended.
 
 * Jupyter notebooks are provided as [examples](https://github.com/yingkaisha/keras-unet-collection/tree/main/examples):
@@ -74,7 +75,7 @@ from keras_unet_collection import models
 
 # Dependencies
 
-* TensorFlow 2.3.0, Keras 2.4.0, Numpy 1.18.2.
+* TensorFlow 2.5.0, Keras 2.5.0, Numpy 1.19.5.
 
 * (Optional for examples) Pillow, matplotlib, etc.
 
