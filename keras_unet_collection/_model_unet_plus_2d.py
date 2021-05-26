@@ -242,14 +242,14 @@ def unet_plus_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_u
     if deep_supervision:
         
         if (backbone is not None) and freeze_backbone:
-            backbone_warn = '\n\nThe shallowest U-net++ deep supervision branch ("sup0") directly connects to a frozen backbone.\nTesting your configurations on `keras_unet_collection.base.unet_plus_2d_base` is recommended.'
+            backbone_warn = '\n\nThe shallowest U-net++ deep supervision branch directly connects to a frozen backbone.\nTesting your configurations on `keras_unet_collection.base.unet_plus_2d_base` is recommended.'
             warnings.warn(backbone_warn);
             
         # model base returns a list of tensors
         X_list = X
         OUT_list = []
         
-        print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows (the last one is the final output):')
+        print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows ("sup0" is the shallowest supervision layer;\n"final" is the final output layer):\n')
         
         # no backbone or VGG backbones
         # depth_ > 2 is expected (a least two downsampling blocks)

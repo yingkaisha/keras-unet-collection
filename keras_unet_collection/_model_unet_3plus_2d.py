@@ -309,14 +309,14 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
         # ----- frozen backbone issue checker ----- #
         if ('{}_backbone_'.format(backbone) in X_decoder[0].name) and freeze_backbone:
             
-            backbone_warn = '\n\nThe deepest UNET 3+ deep supervision branch ("sup0") directly connects to a frozen backbone.\nTesting your configurations on `keras_unet_collection.base.unet_plus_2d_base` is recommended.'
+            backbone_warn = '\n\nThe deepest UNET 3+ deep supervision branch directly connects to a frozen backbone.\nTesting your configurations on `keras_unet_collection.base.unet_plus_2d_base` is recommended.'
             warnings.warn(backbone_warn);
         # ----------------------------------------- #
         
         OUT_stack = []
         L_out = len(X_decoder)
         
-        print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows (the last one is the final output):')
+        print('----------\ndeep_supervision = True\nnames of output tensors are listed as follows ("sup0" is the shallowest supervision layer;\n"final" is the final output layer):\n')
         
         # conv2d --> upsampling --> output activation.
         # index 0 is final output 
