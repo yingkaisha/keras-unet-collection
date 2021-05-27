@@ -18,3 +18,5 @@
 | 0.0.16   | 2021-02-05    | (1) Bugfix.<br />(2) New feature. Loss functions. |
 | 0.0.17   | 2021-02-28    | Bugfix on UNET 3+ |
 | 0.0.18   | 2021-03-04    | Bugfix on UNET 3+ |
+| 0.1.0    | 2021-05-26    | Bugfix on U^2-Net |
+| 0.1.1    | 2021-05-27    | New feature. TransUNET |
