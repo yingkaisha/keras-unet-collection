@@ -2,6 +2,9 @@
 
 # author's testing scripts
 *TEST*
+pyproject.toml
+setup.cfg
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
