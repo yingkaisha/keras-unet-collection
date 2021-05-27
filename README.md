@@ -6,8 +6,6 @@
 
 The `tensorflow.keras` implementation of U-net, V-net, U-net++, UNET 3+, Attention U-net, R2U-net, ResUnet-a, U^2-Net, and TransUNET with optional ImageNet-trained backbones.
 
-(Dependencies are changed to TensorFlow 2.5.0; version 0.1.0)
-
 ----------
 
 `keras_unet_collection.models` contains functions that configure keras models with hyper-parameter options. 
