@@ -17,6 +17,9 @@ from tensorflow.image import extract_patches
 
 class ViT_patch_gen(Layer):
     '''
+    Split feature maps into patches.
+    
+    patches = ViT_patch_gen(patch_size)(feature_map)
     
     ----------
     Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Unterthiner, 
@@ -26,12 +29,14 @@ class ViT_patch_gen(Layer):
     
     Input
     ----------
-
+        patch_size: size of split patches (width=height)
         
     Output
     ----------
-    
+        patches
+        
     '''
+    
     def __init__(self, patch_size):
         super(ViT_patch_gen, self).__init__()
         self.patch_size = patch_size
@@ -49,6 +54,10 @@ class ViT_patch_gen(Layer):
 class ViT_embedding(Layer):
     '''
     
+    The embedding layer of ViT pathes.
+    
+    patches_embed = ViT_embedding(num_patches, proj_dim)(pathes)
+    
     ----------
     Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Unterthiner, 
     T., Dehghani, M., Minderer, M., Heigold, G., Gelly, S. and Uszkoreit, J., 2020. 
@@ -57,12 +66,15 @@ class ViT_embedding(Layer):
     
     Input
     ----------
-
+        num_patches: number of patches to be embedded.
+        proj_dim: number of embedded dimensions. 
         
     Output
     ----------
-    
+        embed: Embedded patches.
+        
     '''
+    
     def __init__(self, num_patches, proj_dim):
         super(ViT_embedding, self).__init__()
         self.num_patches = num_patches
@@ -71,8 +83,8 @@ class ViT_embedding(Layer):
 
     def call(self, patch):
         pos = tf_range(start=0, limit=self.num_patches, delta=1)
-        encoded = self.proj(patch) + self.pos_embed(pos)
-        return encoded
+        embed = self.proj(patch) + self.pos_embed(pos)
+        return embed
     
 def ViT_MLP(X, filter_num, activation='GELU', name='MLP'):
     '''
@@ -86,11 +98,16 @@ def ViT_MLP(X, filter_num, activation='GELU', name='MLP'):
     
     Input
     ----------
-
+        X: the input tensor of MLP, i.e., after MSA and skip connections
+        filter_num: a list that defines the number of nodes for each MLP layer.
+                        For the last MLP layer, its number of node must equal to the dimension of key.
+        activation: activation of MLP nodes.
+        name: prefix of the created keras layers.
         
     Output
     ----------
-    
+        V: output tensor.
+
     '''
     activation_func = eval(activation)
     
@@ -103,6 +120,10 @@ def ViT_MLP(X, filter_num, activation='GELU', name='MLP'):
 def ViT_block(V, num_heads, key_dim, filter_num_MLP, activation='GELU', name='ViT'):
     '''
     
+    Vision transformer (ViT) block.
+    
+    ViT_block(V, num_heads, key_dim, filter_num_MLP, activation='GELU', name='ViT')
+    
     ----------
     Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Unterthiner, 
     T., Dehghani, M., Minderer, M., Heigold, G., Gelly, S. and Uszkoreit, J., 2020. 
@@ -111,13 +132,20 @@ def ViT_block(V, num_heads, key_dim, filter_num_MLP, activation='GELU', name='Vi
     
     Input
     ----------
-
+        V: embedded input features.
+        num_heads: number of attention heads.
+        key_dim: dimension of the attention key (equals to the embeded dimensions).
+        filter_num_MLP: a list that defines the number of nodes for each MLP layer.
+                        For the last MLP layer, its number of node must equal to the dimension of key.
+        activation: activation of MLP nodes.
+        name: prefix of the created keras layers.
         
     Output
     ----------
+        V: output tensor.
     
     '''
-    # Multi-head self-attention
+    # Multiheaded self-attention (MSA)
     V_atten = V # <--- skip
     V_atten = LayerNormalization(name='{}_layer_norm_1'.format(name))(V_atten)
     V_atten = MultiHeadAttention(num_heads=num_heads, key_dim=key_dim, 
@@ -169,7 +197,7 @@ def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
         num_mlp: number of MLP nodes.
         num_heads: number of attention heads.
         num_transformer: number of stacked ViTs.
-        mlp_activation: activation of MLP layers.
+        mlp_activation: activation of MLP nodes.
         
         ---------- (keywords of backbone options) ----------
         backbone_name: the bakcbone model name. Should be one of the `tensorflow.keras.applications` class.
@@ -359,7 +387,7 @@ def transunet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_u
         num_mlp: number of MLP nodes.
         num_heads: number of attention heads.
         num_transformer: number of stacked ViTs.
-        mlp_activation: activation of MLP layers.
+        mlp_activation: activation of MLP nodes.
         
         ---------- (keywords of backbone options) ----------
         backbone_name: the bakcbone model name. Should be one of the `tensorflow.keras.applications` class.
