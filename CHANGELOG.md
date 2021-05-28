@@ -20,3 +20,4 @@
 | 0.0.18   | 2021-03-04    | Bugfix on UNET 3+ |
 | 0.1.0    | 2021-05-26    | Bugfix on U^2-Net |
 | 0.1.1    | 2021-05-27    | New feature. TransUNET |
+| 0.1.2    | 2021-05-27    | Bugfix on the packaging issue |
