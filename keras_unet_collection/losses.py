@@ -233,7 +233,35 @@ def focal_tversky(y_true, y_pred, alpha=0.5, gamma=4/3, const=K.epsilon()):
     loss_val = tf.math.pow((1-tversky_coef(y_true, y_pred, alpha=alpha, const=const)), 1/gamma)
     
     return loss_val
+
 # ========================= #
+# MS-SSIM
+
+def ms_ssim(y_true, y_pred, **kwargs):
+    """
+    Multiscale structural similarity (MS-SSIM) loss.
+    
+    ms_ssim(y_true, y_pred, **tf_ssim_kw)
+    
+    ----------
+    Input
+        kwargs: keywords of tf.image.ssim_multiscale
+                https://www.tensorflow.org/api_docs/python/tf/image/ssim_multiscale
+    
+    """
+    
+    y_pred = tf.convert_to_tensor(y_pred)
+    y_true = tf.cast(y_true, y_pred.dtype)
+    
+    y_pred = tf.squeeze(y_pred)
+    y_true = tf.squeeze(y_true)
+        
+    tf_ms_ssim = tf.image.ssim_multiscale(y_true, y_pred, **kwargs)
+        
+    return 1 - tf_ms_ssim
+
+# ========================= #
+# Semi-hard triplet
 
 def triplet_1d(y_true, y_pred, N, margin=5.0):
     
@@ -265,5 +293,3 @@ def triplet_1d(y_true, y_pred, N, margin=5.0):
     loss_val = tf.reduce_mean(loss_val)
     
     return loss_val
-
-
