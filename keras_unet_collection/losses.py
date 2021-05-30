@@ -249,7 +249,7 @@ def ms_ssim(y_true, y_pred, **kwargs):
                 https://www.tensorflow.org/api_docs/python/tf/image/ssim_multiscale
                 
         *Issues of `tf.image.ssim_multiscale`refers to:
-                https://stackoverflow.com/questions/65411698/ms-ssim-in-tensorflow
+                https://stackoverflow.com/questions/57127626/error-in-calculation-of-inbuilt-ms-ssim-function-in-tensorflow
     
     """
     
