@@ -20,3 +20,4 @@
 | 0.0.18   | 2021-03-04    | Bugfix on UNET 3+ |
 | 0.1.1    | 2021-05-27    | (1) Bugfix.<br />(2) New feature. TransUNET. |
 | 0.1.5    | 2021-05-27    | Bugfix on the packaging issue. |
+| 0.1.6    | 2021-05-30    | New feature. MS-SSMI and IoU loss functions. |
