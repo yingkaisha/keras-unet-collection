@@ -244,6 +244,10 @@ def ms_ssim(y_true, y_pred, **kwargs):
     ms_ssim(y_true, y_pred, **tf_ssim_kw)
     
     ----------
+    Wang, Z., Simoncelli, E.P. and Bovik, A.C., 2003, November. Multiscale structural similarity for image quality assessment. 
+    In The Thrity-Seventh Asilomar Conference on Signals, Systems & Computers, 2003 (Vol. 2, pp. 1398-1402). Ieee.
+    
+    ----------
     Input
         kwargs: keywords of `tf.image.ssim_multiscale`
                 https://www.tensorflow.org/api_docs/python/tf/image/ssim_multiscale
@@ -388,9 +392,8 @@ def iou_seg(y_true, y_pred, dtype=tf.float32):
     iou_seg(y_true, y_pred, dtype=tf.float32)
     
     ----------
-    Rezatofighi, H., Tsoi, N., Gwak, J., Sadeghian, A., Reid, I. and Savarese, S., 2019. 
-    Generalized intersection over union: A metric and a loss for bounding box regression. 
-    In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (pp. 658-666).
+    Rahman, M.A. and Wang, Y., 2016, December. Optimizing intersection-over-union in deep neural networks for 
+    image segmentation. In International symposium on visual computing (pp. 234-244). Springer, Cham.
     
     ----------
     Input
