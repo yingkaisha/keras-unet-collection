@@ -255,24 +255,24 @@ def ms_ssim(y_true, y_pred, **kwargs):
     
     y_pred = tf.squeeze(y_pred)
     y_true = tf.squeeze(y_true)
-        
+    
     tf_ms_ssim = tf.image.ssim_multiscale(y_true, y_pred, **kwargs)
         
     return 1 - tf_ms_ssim
 
 # ======================== #
 
-def iou_coef(y_true, y_pred, mode='giou', dtype=tf.float32):
+def iou_box_coef(y_true, y_pred, mode='giou', dtype=tf.float32):
     
     """
-    Inersection over Union (IoU) and generalized IoU coefficients.
+    Inersection over Union (IoU) and generalized IoU coefficients for bounding boxes.
+    
+    iou_box_coef(y_true, y_pred, mode='giou', dtype=tf.float32)
     
     ----------
     Rezatofighi, H., Tsoi, N., Gwak, J., Sadeghian, A., Reid, I. and Savarese, S., 2019. 
     Generalized intersection over union: A metric and a loss for bounding box regression. 
     In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (pp. 658-666).
-    
-    iou_coef(y_true, y_pred, mode='giou', dtype=tf.float32)
     
     ----------
     Input
@@ -341,16 +341,16 @@ def iou_coef(y_true, y_pred, mode='giou', dtype=tf.float32):
 
         return giou
 
-def iou_loss(y_true, y_pred, mode='giou', dtype=tf.float32):
+def iou_box(y_true, y_pred, mode='giou', dtype=tf.float32):
     """
-    Inersection over Union (IoU) and generalized IoU losses. 
+    Inersection over Union (IoU) and generalized IoU losses for bounding boxes. 
+    
+    iou_box(y_true, y_pred, mode='giou', dtype=tf.float32)
     
     ----------
     Rezatofighi, H., Tsoi, N., Gwak, J., Sadeghian, A., Reid, I. and Savarese, S., 2019. 
     Generalized intersection over union: A metric and a loss for bounding box regression. 
     In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (pp. 658-666).
-    
-    iou_loss(y_true, y_pred, mode='giou', dtype=tf.float32)
     
     ----------
     Input
@@ -375,7 +375,53 @@ def iou_loss(y_true, y_pred, mode='giou', dtype=tf.float32):
     y_pred = tf.squeeze(y_pred)
     y_true = tf.squeeze(y_true)
 
-    return 1 - iou_coef(y_true, y_pred, mode=mode, dtype=dtype)
+    return 1 - iou_box_coef(y_true, y_pred, mode=mode, dtype=dtype)
+
+
+def iou_seg(y_true, y_pred, dtype=tf.float32):
+    """
+    Inersection over Union (IoU) loss for segmentation maps. 
+    
+    iou_seg(y_true, y_pred, dtype=tf.float32)
+    
+    ----------
+    Rezatofighi, H., Tsoi, N., Gwak, J., Sadeghian, A., Reid, I. and Savarese, S., 2019. 
+    Generalized intersection over union: A metric and a loss for bounding box regression. 
+    In Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (pp. 658-666).
+    
+    ----------
+    Input
+        y_true: the target bounding box. 
+        y_pred: the predicted bounding box.
+        
+        Elements of a bounding box should be organized as: [y_min, x_min, y_max, x_max].
+
+        mode: 'iou' for IoU coeff (i.e., Jaccard index);
+              'giou' for generalized IoU coeff.
+        
+        dtype: the data type of input tensors.
+               Default is tf.float32.
+        
+    """
+
+    # tf tensor casting
+    y_pred = tf.convert_to_tensor(y_pred)
+    y_pred = tf.cast(y_pred, dtype)
+    y_true = tf.cast(y_true, y_pred.dtype)
+
+    y_pred = tf.squeeze(y_pred)
+    y_true = tf.squeeze(y_true)
+    
+    y_true_pos = tf.reshape(y_true, [-1])
+    y_pred_pos = tf.reshape(y_pred, [-1])
+
+    area_intersect = tf.reduce_sum(tf.multiply(y_true_pos, y_pred_pos))
+    
+    area_true = tf.reduce_sum(y_true_pos)
+    area_pred = tf.reduce_sum(y_pred_pos)
+    area_union = area_true + area_pred - area_intersect
+    
+    return 1-tf.math.divide_no_nan(area_intersect, area_union)
 
 # ========================= #
 # Semi-hard triplet
