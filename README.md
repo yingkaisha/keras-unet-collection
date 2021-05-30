@@ -70,7 +70,7 @@ from keras_unet_collection import models
 
   * Attention U-net with VGG16 backbone [[link]](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/human-seg_atten-unet-backbone_coco.ipynb).
   
-  * UNET 3+ with deep supervision and classification guided module [[link]](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/segmentation_unet-three-plus_oxford-iiit.ipynb).
+  * UNET 3+ with deep supervision, classification-guided module, and hybrid loss [[link]](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/segmentation_unet-three-plus_oxford-iiit.ipynb).
 
 * [Changelog](https://github.com/yingkaisha/keras-unet-collection/blob/main/CHANGELOG.md)
 
