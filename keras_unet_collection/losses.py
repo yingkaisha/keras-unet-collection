@@ -245,8 +245,11 @@ def ms_ssim(y_true, y_pred, **kwargs):
     
     ----------
     Input
-        kwargs: keywords of tf.image.ssim_multiscale
+        kwargs: keywords of `tf.image.ssim_multiscale`
                 https://www.tensorflow.org/api_docs/python/tf/image/ssim_multiscale
+                
+        *Issues of `tf.image.ssim_multiscale`refers to:
+                https://stackoverflow.com/questions/65411698/ms-ssim-in-tensorflow
     
     """
     
