@@ -29,11 +29,15 @@ class ViT_patch_gen(Layer):
     
     Input
     ----------
+        feature_map: a four-dimensional tensor of (num_sample, width, height, channel)
         patch_size: size of split patches (width=height)
         
     Output
     ----------
-        patches
+        patches: a three-dimensional tensor of (num_sample*num_patches, patch_size*patch_size)
+                 where `num_patches = (width // patch_size) * (height // patch_size)`
+                 
+    For further information see: https://www.tensorflow.org/api_docs/python/tf/image/extract_patches
         
     '''
     
@@ -44,11 +48,15 @@ class ViT_patch_gen(Layer):
     def call(self, images):
         batch_size = tf_shape(images)[0]
         patches = extract_patches(images=images,
-                                           sizes=[1, self.patch_size, self.patch_size, 1],
-                                           strides=[1, self.patch_size, self.patch_size, 1],
-                                           rates=[1, 1, 1, 1], padding='VALID',)
+                                  sizes=[1, self.patch_size, self.patch_size, 1],
+                                  strides=[1, self.patch_size, self.patch_size, 1],
+                                  rates=[1, 1, 1, 1], padding='VALID',)
+        
+        # patches.shape = (num_sample, num_patches, patch_size*patch_size)
         patch_dim = patches.shape[-1]
         patches = tf_reshape(patches, [batch_size, -1, patch_dim])
+        
+        # patches.shape = (num_sample*num_patches, patch_size*patch_size)
         return patches
     
 class ViT_embedding(Layer):
