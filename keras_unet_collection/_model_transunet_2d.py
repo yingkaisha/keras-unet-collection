@@ -80,7 +80,9 @@ class ViT_embedding(Layer):
     Output
     ----------
         embed: Embedded patches.
-        
+    
+    For further information see: https://keras.io/api/layers/core_layers/embedding/
+    
     '''
     
     def __init__(self, num_patches, proj_dim):

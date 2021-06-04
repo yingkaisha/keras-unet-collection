@@ -8,7 +8,7 @@ import tensorflow.keras.backend as K
 def _crps_tf(y_true, y_pred, factor=0.05):
     
     '''
-    core of (pseudo) CRPS loss
+    core of (pseudo) CRPS loss.
     
     y_true: two-dimensional arrays
     y_pred: two-dimensional arrays
@@ -65,7 +65,7 @@ def crps2d_tf(y_true, y_pred, factor=0.05):
 def _crps_np(y_true, y_pred, factor=0.05):
     
     '''
-    Numpy version of _crps_tf
+    Numpy version of _crps_tf.
     '''
     
     # mean absolute error
@@ -397,13 +397,8 @@ def iou_seg(y_true, y_pred, dtype=tf.float32):
     
     ----------
     Input
-        y_true: the target bounding box. 
-        y_pred: the predicted bounding box.
-        
-        Elements of a bounding box should be organized as: [y_min, x_min, y_max, x_max].
-
-        mode: 'iou' for IoU coeff (i.e., Jaccard index);
-              'giou' for generalized IoU coeff.
+        y_true: segmentation targets. 
+        y_pred: segmentation predictions.
         
         dtype: the data type of input tensors.
                Default is tf.float32.
