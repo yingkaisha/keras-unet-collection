@@ -397,7 +397,7 @@ def iou_seg(y_true, y_pred, dtype=tf.float32):
     
     ----------
     Input
-        y_true: segmentation targets. 
+        y_true: segmentation targets, c.f. `keras.losses.categorical_crossentropy`
         y_pred: segmentation predictions.
         
         dtype: the data type of input tensors.
