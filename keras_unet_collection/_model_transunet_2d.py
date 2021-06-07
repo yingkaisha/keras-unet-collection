@@ -34,7 +34,7 @@ class ViT_patch_gen(Layer):
         
     Output
     ----------
-        patches: a three-dimensional tensor of (num_sample*num_patches, patch_size*patch_size)
+        patches: a two-dimensional tensor of (num_sample*num_patches, patch_size*patch_size)
                  where `num_patches = (width // patch_size) * (height // patch_size)`
                  
     For further information see: https://www.tensorflow.org/api_docs/python/tf/image/extract_patches
@@ -427,7 +427,7 @@ def transunet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_u
     X = transunet_2d_base(IN, filter_num, stack_num_down=stack_num_down, stack_num_up=stack_num_up, 
                           proj_dim=proj_dim, num_mlp=num_mlp, num_heads=num_heads, num_transformer=num_transformer,
                           activation=activation, mlp_activation=mlp_activation, batch_norm=batch_norm, pool=pool, unpool=unpool,
-                          backbone=backbone, weights=weights, freeze_backbone=freeze_backbone, freeze_batch_norm=freeze_backbone, name=name)
+                          backbone=backbone, weights=weights, freeze_backbone=freeze_backbone, freeze_batch_norm=freeze_batch_norm, name=name)
     
     # output layer
     OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
