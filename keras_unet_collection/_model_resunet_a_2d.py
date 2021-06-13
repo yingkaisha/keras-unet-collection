@@ -282,7 +282,7 @@ def resunet_a_2d(input_size, filter_num, dilation_num, n_labels,
     
     OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
 
-    model = Model([IN], [OUT,])
+    model = Model([IN], [OUT,], name='{}_model'.format(name))
     
     return model
 
