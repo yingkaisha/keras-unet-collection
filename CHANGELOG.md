@@ -22,3 +22,4 @@
 | 0.1.5    | 2021-05-27    | Bugfix on the packaging issue. |
 | 0.1.6    | 2021-05-30    | New feature. MS-SSMI and IoU loss functions. |
 | 0.1.7    | 2021-06-07    | Bugfix on TransUNET |
+| 0.1.8    | 2021-06-07    | Bugfix on TransUNET |
