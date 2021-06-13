@@ -46,17 +46,20 @@ class ViT_patch_gen(Layer):
         self.patch_size = patch_size
 
     def call(self, images):
+        
         batch_size = tf_shape(images)[0]
+        
         patches = extract_patches(images=images,
                                   sizes=[1, self.patch_size, self.patch_size, 1],
                                   strides=[1, self.patch_size, self.patch_size, 1],
                                   rates=[1, 1, 1, 1], padding='VALID',)
+        # patches.shape = (num_sample, patch_num, patch_num, patch_size*channel)
         
-        # patches.shape = (num_sample, num_patches, patch_size*patch_size)
         patch_dim = patches.shape[-1]
-        patches = tf_reshape(patches, [batch_size, -1, patch_dim])
+        patch_num = patches.shape[1]
+        patches = tf_reshape(patches, [batch_size, patch_num*patch_num, patch_dim])
+        # patches.shape = (num_sample, patch_num*patch_num, patch_size*channel)
         
-        # patches.shape = (num_sample*num_patches, patch_size*patch_size)
         return patches
     
 class ViT_embedding(Layer):
@@ -305,29 +308,25 @@ def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
         
     # subtrack the last tensor (will be replaced by the ViT output)
     X = X_skip[-1]
-    X_skip = X_skip[:-1] 
-    
-    # ----- ViT block after UNet-like encoding ----- #
-    
+    X_skip = X_skip[:-1]
+
     # 1-by-1 linear transformation before entering ViT blocks
     X = Conv2D(filter_num[-1], 1, padding='valid', use_bias=False, name='{}_conv_trans_before'.format(name))(X)
-    
-    # feature map to patches
-    X = ViT_patch_gen(patch_size)(X_skip[-1])
-    
-    # patches to embeddings
+
+    X = ViT_patch_gen(patch_size)(X)
     X = ViT_embedding(num_patches, proj_dim)(X)
-    
+
     # stacked ViTs 
     for i in range(num_transformer):
         X = ViT_block(X, num_heads, key_dim, filter_num_MLP, activation=mlp_activation, 
                       name='{}_ViT_{}'.format(name, i))
-        
+
     # reshape patches to feature maps
     X = tf_reshape(X, (-1, encode_size, encode_size, proj_dim))
-    
+
     # 1-by-1 linear transformation to adjust the number of channels
     X = Conv2D(filter_num[-1], 1, padding='valid', use_bias=False, name='{}_conv_trans_after'.format(name))(X)
+
     X_skip.append(X)
     
     # ----- UNet-like upsampling ----- #
@@ -347,14 +346,14 @@ def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
     for i in range(depth_decode):
         X = UNET_right(X, [X_decode[i],], filter_num_decode[i], stack_num=stack_num_up, activation=activation, 
                        unpool=unpool, batch_norm=batch_norm, name='{}_up{}'.format(name, i))
-        
+
     # if tensors for concatenation is not enough
     # then use upsampling without concatenation 
     if depth_decode < depth_-1:
         for i in range(depth_-depth_decode-1):
             i_real = i + depth_decode
             X = UNET_right(X, None, filter_num_decode[i_real], stack_num=stack_num_up, activation=activation, 
-                       unpool=unpool, batch_norm=batch_norm, concat=False, name='{}_up{}'.format(name, i_real)) 
+                       unpool=unpool, batch_norm=batch_norm, concat=False, name='{}_up{}'.format(name, i_real))
             
     return X
 
