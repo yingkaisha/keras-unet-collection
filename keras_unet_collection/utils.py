@@ -2,6 +2,23 @@
 import numpy as np
 from PIL import Image
 
+def dummy_loader(model_path):
+    '''
+    Load a stored keras model and return its weights.
+    
+    Input
+    ----------
+        The file path of the stored keras model.
+    
+    Output
+    ----------
+        Weights of the model.
+        
+    '''
+    backbone = keras.models.load_model(model_path, compile=False)
+    W = backbone.get_weights()
+    return W
+
 def image_to_array(filenames, size, channel):
     '''
     Converting RGB images to numpy arrays.
