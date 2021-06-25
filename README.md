@@ -4,7 +4,7 @@
 [![PyPI license](https://img.shields.io/pypi/l/keras-unet-collection.svg)](https://pypi.org/project/keras-unet-collection/)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/yingkaisha/keras-unet-collection/graphs/commit-activity)
 
-The `tensorflow.keras` implementation of U-net, V-net, U-net++, UNET 3+, Attention U-net, R2U-net, ResUnet-a, U^2-Net, and TransUNET with optional ImageNet-trained backbones.
+The `tensorflow.keras` implementation of U-net, V-net, U-net++, UNET 3+, Attention U-net, R2U-net, ResUnet-a, U^2-Net, TransUNET, and Swin-UNET with optional ImageNet-trained backbones.
 
 ----------
 
@@ -25,6 +25,9 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, UNET 3+, Attenti
 | `u2net_2d`     | U^2-Net         | [Qin et al. (2020)](https://arxiv.org/abs/2005.09007) |
 | `unet_3plus_2d` | UNET 3+        | [Huang et al. (2020)](https://arxiv.org/abs/2004.08790) |
 | `transunet_2d` | TransUNET       | [Chen et al. (2021)](https://arxiv.org/abs/2102.04306) |
+| `swin_unet_2d` | Swin-UNET       | [Hu et al. (2021)](https://arxiv.org/abs/2105.05537) |
+
+**Note**: the Swin-UNET implementation is experimental, and is not compared to the official repository of Hu et al. (2021).
 
 ----------
 
@@ -32,7 +35,7 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, UNET 3+, Attenti
 
 | ` keras_unet_collection.base` | Notes |
 |:-----------------------------------|:------|
-| `unet_2d_base`, `vnet_2d_base`, `unet_plus_2d_base`, `unet_3plus_2d_base`, `att_unet_2d_base`, `r2_unet_2d_base`, `resunet_a_2d_base`, `u2net_2d_base`, `transunet_2d_base` | Functions that accept an input tensor and hyper-parameters of the corresponded model, and produce output tensors of the base architecture. |
+| `unet_2d_base`, `vnet_2d_base`, `unet_plus_2d_base`, `unet_3plus_2d_base`, `att_unet_2d_base`, `r2_unet_2d_base`, `resunet_a_2d_base`, `u2net_2d_base`, `transunet_2d_base`, `swin_unet_2d_base` | Functions that accept an input tensor and hyper-parameters of the corresponded model, and produce output tensors of the base architecture. |
 
 ----------
 
@@ -73,6 +76,8 @@ Keras models created by this package may contain customized layers that are not
   * Attention U-net with VGG16 backbone [[link]](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/human-seg_atten-unet-backbone_coco.ipynb).
   
   * UNET 3+ with deep supervision, classification-guided module, and hybrid loss [[link]](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/segmentation_unet-three-plus_oxford-iiit.ipynb).
+
+  * Vision-Transformer-based examples are in progress, and available at [**keras-vision-transformer**](https://github.com/yingkaisha/keras-vision-transformer)
 
 * [Changelog](https://github.com/yingkaisha/keras-unet-collection/blob/main/CHANGELOG.md)
 
