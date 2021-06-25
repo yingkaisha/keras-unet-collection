@@ -23,3 +23,4 @@
 | 0.1.6    | 2021-05-30    | New feature. MS-SSMI and IoU loss functions. |
 | 0.1.7    | 2021-06-07    | Bugfix on TransUNET |
 | 0.1.8    | 2021-06-07    | Bugfix on TransUNET |
+| 0.1.9    | 2021-06-25    | (1) New feature. Swin-UNET.<br />(2) Update utils and the user guide. |
