@@ -4,100 +4,13 @@ from __future__ import absolute_import
 from keras_unet_collection.layer_utils import *
 from keras_unet_collection.activations import GELU, Snake
 from keras_unet_collection._model_unet_2d import UNET_left, UNET_right
+from keras_unet_collection.transformer_layers import patch_extract, patch_embedding
 from keras_unet_collection._backbone_zoo import backbone_zoo, bach_norm_checker
 
+import tensorflow as tf
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 from tensorflow.keras.layers import Layer, MultiHeadAttention, LayerNormalization, Dense, Embedding
-
-from tensorflow import range as tf_range
-from tensorflow import shape as tf_shape
-from tensorflow import reshape as tf_reshape
-from tensorflow.image import extract_patches
-
-class ViT_patch_gen(Layer):
-    '''
-    Split feature maps into patches.
-    
-    patches = ViT_patch_gen(patch_size)(feature_map)
-    
-    ----------
-    Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Unterthiner, 
-    T., Dehghani, M., Minderer, M., Heigold, G., Gelly, S. and Uszkoreit, J., 2020. 
-    An image is worth 16x16 words: Transformers for image recognition at scale. 
-    arXiv preprint arXiv:2010.11929.
-    
-    Input
-    ----------
-        feature_map: a four-dimensional tensor of (num_sample, width, height, channel)
-        patch_size: size of split patches (width=height)
-        
-    Output
-    ----------
-        patches: a two-dimensional tensor of (num_sample*num_patches, patch_size*patch_size)
-                 where `num_patches = (width // patch_size) * (height // patch_size)`
-                 
-    For further information see: https://www.tensorflow.org/api_docs/python/tf/image/extract_patches
-        
-    '''
-    
-    def __init__(self, patch_size):
-        super(ViT_patch_gen, self).__init__()
-        self.patch_size = patch_size
-
-    def call(self, images):
-        
-        batch_size = tf_shape(images)[0]
-        
-        patches = extract_patches(images=images,
-                                  sizes=[1, self.patch_size, self.patch_size, 1],
-                                  strides=[1, self.patch_size, self.patch_size, 1],
-                                  rates=[1, 1, 1, 1], padding='VALID',)
-        # patches.shape = (num_sample, patch_num, patch_num, patch_size*channel)
-        
-        patch_dim = patches.shape[-1]
-        patch_num = patches.shape[1]
-        patches = tf_reshape(patches, [batch_size, patch_num*patch_num, patch_dim])
-        # patches.shape = (num_sample, patch_num*patch_num, patch_size*channel)
-        
-        return patches
-    
-class ViT_embedding(Layer):
-    '''
-    
-    The embedding layer of ViT pathes.
-    
-    patches_embed = ViT_embedding(num_patches, proj_dim)(pathes)
-    
-    ----------
-    Dosovitskiy, A., Beyer, L., Kolesnikov, A., Weissenborn, D., Zhai, X., Unterthiner, 
-    T., Dehghani, M., Minderer, M., Heigold, G., Gelly, S. and Uszkoreit, J., 2020. 
-    An image is worth 16x16 words: Transformers for image recognition at scale. 
-    arXiv preprint arXiv:2010.11929.
-    
-    Input
-    ----------
-        num_patches: number of patches to be embedded.
-        proj_dim: number of embedded dimensions. 
-        
-    Output
-    ----------
-        embed: Embedded patches.
-    
-    For further information see: https://keras.io/api/layers/core_layers/embedding/
-    
-    '''
-    
-    def __init__(self, num_patches, proj_dim):
-        super(ViT_embedding, self).__init__()
-        self.num_patches = num_patches
-        self.proj = Dense(proj_dim)
-        self.pos_embed = Embedding(input_dim=num_patches, output_dim=proj_dim)
-
-    def call(self, patch):
-        pos = tf_range(start=0, limit=self.num_patches, delta=1)
-        embed = self.proj(patch) + self.pos_embed(pos)
-        return embed
     
 def ViT_MLP(X, filter_num, activation='GELU', name='MLP'):
     '''
@@ -177,7 +90,7 @@ def ViT_block(V, num_heads, key_dim, filter_num_MLP, activation='GELU', name='Vi
 
 
 def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2, 
-                      proj_dim=768, num_mlp=3072, num_heads=12, num_transformer=12,
+                      embed_dim=768, num_mlp=3072, num_heads=12, num_transformer=12,
                       activation='ReLU', mlp_activation='GELU', batch_norm=False, pool=True, unpool=True, 
                       backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='transunet'):
     '''
@@ -206,7 +119,7 @@ def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
         name: prefix of the created keras model and its layers.
         
         ---------- (keywords of ViT) ----------
-        proj_dim: number of embedded dimensions.
+        embed_dim: number of embedded dimensions.
         num_mlp: number of MLP nodes.
         num_heads: number of attention heads.
         num_transformer: number of stacked ViTs.
@@ -251,10 +164,10 @@ def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
     num_patches = encode_size ** 2 
     
     # dimension of the attention key (= dimension of embedings)
-    key_dim = proj_dim
+    key_dim = embed_dim
     
     # number of MLP nodes
-    filter_num_MLP = [num_mlp, proj_dim]
+    filter_num_MLP = [num_mlp, embed_dim]
     
     # ----- UNet-like downsampling ----- #
     
@@ -313,8 +226,8 @@ def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
     # 1-by-1 linear transformation before entering ViT blocks
     X = Conv2D(filter_num[-1], 1, padding='valid', use_bias=False, name='{}_conv_trans_before'.format(name))(X)
 
-    X = ViT_patch_gen(patch_size)(X)
-    X = ViT_embedding(num_patches, proj_dim)(X)
+    X = patch_extract((patch_size, patch_size))(X)
+    X = patch_embedding(num_patches, embed_dim)(X)
 
     # stacked ViTs 
     for i in range(num_transformer):
@@ -322,7 +235,7 @@ def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
                       name='{}_ViT_{}'.format(name, i))
 
     # reshape patches to feature maps
-    X = tf_reshape(X, (-1, encode_size, encode_size, proj_dim))
+    X = tf.reshape(X, (-1, encode_size, encode_size, embed_dim))
 
     # 1-by-1 linear transformation to adjust the number of channels
     X = Conv2D(filter_num[-1], 1, padding='valid', use_bias=False, name='{}_conv_trans_after'.format(name))(X)
@@ -358,7 +271,7 @@ def transunet_2d_base(input_tensor, filter_num, stack_num_down=2, stack_num_up=2
     return X
 
 def transunet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_up=2,
-                 proj_dim=768, num_mlp = 3072, num_heads=12, num_transformer=12,
+                 embed_dim=768, num_mlp = 3072, num_heads=12, num_transformer=12,
                  activation='ReLU', mlp_activation='GELU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, 
                  backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='transunet'):
     '''
@@ -392,7 +305,7 @@ def transunet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_u
         name: prefix of the created keras model and its layers.
         
         ---------- (keywords of ViT) ----------
-        proj_dim: number of embedded dimensions.
+        embed_dim: number of embedded dimensions.
         num_mlp: number of MLP nodes.
         num_heads: number of attention heads.
         num_transformer: number of stacked ViTs.
@@ -424,7 +337,7 @@ def transunet_2d(input_size, filter_num, n_labels, stack_num_down=2, stack_num_u
     
     # base    
     X = transunet_2d_base(IN, filter_num, stack_num_down=stack_num_down, stack_num_up=stack_num_up, 
-                          proj_dim=proj_dim, num_mlp=num_mlp, num_heads=num_heads, num_transformer=num_transformer,
+                          embed_dim=embed_dim, num_mlp=num_mlp, num_heads=num_heads, num_transformer=num_transformer,
                           activation=activation, mlp_activation=mlp_activation, batch_norm=batch_norm, pool=pool, unpool=unpool,
                           backbone=backbone, weights=weights, freeze_backbone=freeze_backbone, freeze_batch_norm=freeze_batch_norm, name=name)
     
