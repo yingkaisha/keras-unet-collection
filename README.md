@@ -64,7 +64,9 @@ from keras_unet_collection import models
 ```
 * **Note**: Currently supported backbone models are: `VGG[16,19]`, `ResNet[50,101,152]`, `ResNet[50,101,152]V2`, `DenseNet[121,169,201]`, and `EfficientNetB[0-7]`. See [Keras Applications](https://keras.io/api/applications/) for details. 
 
-* **Note**: Neural networks produced by this package may not be compatible with other pre-trained models of the same name. Training from scratch is recommended.
+* **Note**: Neural networks produced by this package may contain customized layers that are not part of the Tensorflow. It is reommended to save and load model weights.
+
+Keras models created by this package may contain customized layers that are not 
 
 * Jupyter notebooks are provided as [examples](https://github.com/yingkaisha/keras-unet-collection/tree/main/examples):
 
