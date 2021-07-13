@@ -24,3 +24,4 @@
 | 0.1.7    | 2021-06-07    | Bugfix on TransUNET |
 | 0.1.8    | 2021-06-07    | Bugfix on TransUNET |
 | 0.1.9    | 2021-06-25    | (1) New feature. Swin-UNET.<br />(2) Update utils and the user guide. |
+| 0.1.10   | 2021-07-13    | Bugfix model saving issues. |
