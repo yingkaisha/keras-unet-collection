@@ -152,7 +152,7 @@ def swin_unet_2d_base(input_tensor, filter_num_begin, depth, stack_num_down, sta
         
         # Patch expanding
         X = patch_expanding(num_patch=(num_patch_x, num_patch_y),
-                            embed_dim=embed_dim, upsample_rate=2, return_vector=True)(X)
+                            embed_dim=embed_dim, upsample_rate=2, return_vector=True, name='{}_swin_up{}'.format(name, i))(X)
         
 
         # update token shape info

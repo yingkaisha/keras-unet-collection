@@ -36,9 +36,10 @@ class patch_extract(Layer):
     
     def __init__(self, patch_size):
         super(patch_extract, self).__init__()
+        self.patch_size = patch_size
         self.patch_size_x = patch_size[0]
         self.patch_size_y = patch_size[0]
-        
+    
     def call(self, images):
         
         batch_size = tf.shape(images)[0]
@@ -55,6 +56,15 @@ class patch_extract(Layer):
         # patches.shape = (num_sample, patch_num*patch_num, patch_size*channel)
         
         return patches
+    
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({'patch_size': self.patch_size,})
+        return config
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
     
 class patch_embedding(Layer):
     '''
@@ -84,9 +94,22 @@ class patch_embedding(Layer):
     def __init__(self, num_patch, embed_dim):
         super(patch_embedding, self).__init__()
         self.num_patch = num_patch
+        self.embed_dim = embed_dim
         self.proj = Dense(embed_dim)
         self.pos_embed = Embedding(input_dim=num_patch, output_dim=embed_dim)
 
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'num_patch': self.num_patch,
+            'embed_dim': self.embed_dim,
+        })
+        return config
+    
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+    
     def call(self, patch):
         pos = tf.range(start=0, limit=self.num_patch, delta=1)
         embed = self.proj(patch) + self.pos_embed(pos)
@@ -116,6 +139,19 @@ class patch_merging(tf.keras.layers.Layer):
         # A linear transform that doubles the channels 
         self.linear_trans = Dense(2*embed_dim, use_bias=False, name='{}_linear_trans'.format(name))
 
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'num_patch': self.num_patch,
+            'embed_dim': self.embed_dim,
+            'name':self.name
+        })
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+    
     def call(self, x):
         
         H, W = self.num_patch
@@ -159,7 +195,7 @@ class patch_expanding(tf.keras.layers.Layer):
     For further information see: https://www.tensorflow.org/api_docs/python/tf/nn/depth_to_space
     '''
 
-    def __init__(self, num_patch, embed_dim, upsample_rate, return_vector=True, name=''):
+    def __init__(self, num_patch, embed_dim, upsample_rate, return_vector=True, name='patch_expand'):
         super().__init__()
         
         self.num_patch = num_patch
@@ -173,6 +209,21 @@ class patch_expanding(tf.keras.layers.Layer):
         self.linear_trans2 = Conv2D(upsample_rate*embed_dim, kernel_size=1, use_bias=False, name='{}_linear_trans1'.format(name))
         self.prefix = name
         
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'num_patch': self.num_patch,
+            'embed_dim': self.embed_dim,
+            'upsample_rate': self.upsample_rate,
+            'return_vector': self.return_vector,
+            'name':self.name,
+        })
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+    
     def call(self, x):
         
         H, W = self.num_patch
@@ -250,6 +301,15 @@ class drop_path(Layer):
         super().__init__()
         self.drop_prob = drop_prob
 
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({'drop_prob': self.drop_prob})
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+    
     def call(self, x, training=None):
         return drop_path_(x, self.drop_prob, training)
 
@@ -257,6 +317,9 @@ class Mlp(tf.keras.layers.Layer):
     def __init__(self, filter_num, drop=0., name=''):
         
         super().__init__()
+        
+        self.filter_num = filter_num
+        self.drop = drop
         
         # MLP layers
         self.fc1 = Dense(filter_num[0], name='{}_mlp_0'.format(name))
@@ -268,11 +331,24 @@ class Mlp(tf.keras.layers.Layer):
         # GELU activation
         self.activation = tf.keras.activations.gelu
         
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'filter_num': self.filter_num,
+            'drop': self.drop,
+            'name': self.name,
+        })
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+    
     def call(self, x):
         
         # MLP --> GELU --> Drop --> MLP --> Drop
         x = self.fc1(x)
-        self.activation(x)
+        x = self.activation(x)
         x = self.drop(x)
         x = self.fc2(x)
         x = self.drop(x)
@@ -286,6 +362,10 @@ class WindowAttention(tf.keras.layers.Layer):
         self.dim = dim # number of input dimensions
         self.window_size = window_size # size of the attention window
         self.num_heads = num_heads # number of self-attention heads
+        self.qkv_bias = qkv_bias
+        self.qk_scale = qk_scale
+        self.attn_drop = attn_drop
+        self.proj_drop = proj_drop
         
         head_dim = dim // num_heads
         self.scale = qk_scale or head_dim ** -0.5 # query scaling factor
@@ -298,6 +378,24 @@ class WindowAttention(tf.keras.layers.Layer):
         self.proj = Dense(dim, name='{}_attn_proj'.format(self.prefix))
         self.proj_drop = Dropout(proj_drop)
 
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'dim':self.dim, 
+            'window_size':self.window_size, 
+            'num_heads':self.num_heads, 
+            'qkv_bias':self.qkv_bias, 
+            'qk_scale':self.qk_scale, 
+            'attn_drop':self.attn_drop, 
+            'proj_drop':self.proj_drop, 
+            'name':self.prefix
+        })
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+        
     def build(self, input_shape):
         
         # zero initialization
@@ -387,6 +485,13 @@ class SwinTransformerBlock(tf.keras.layers.Layer):
         self.window_size = window_size # size of window
         self.shift_size = shift_size # size of window shift
         self.num_mlp = num_mlp # number of MLP nodes
+        self.qkv_bias = qkv_bias
+        self.qk_scale = qk_scale
+        self.mlp_drop = mlp_drop
+        self.attn_drop = attn_drop
+        self.proj_drop = proj_drop
+        self.drop_path_prob = drop_path_prob
+        
         self.prefix = name
         
         # Layers
@@ -406,7 +511,30 @@ class SwinTransformerBlock(tf.keras.layers.Layer):
         if min(self.num_patch) < self.window_size:
             self.shift_size = 0
             self.window_size = min(self.num_patch)
-            
+    
+    def get_config(self):
+        config = super().get_config().copy()
+        config.update({
+            'dim':self.dim, 
+            'num_patch':self.num_patch, 
+            'num_heads':self.num_heads, 
+            'window_size':self.window_size, 
+            'shift_size':self.shift_size, 
+            'num_mlp':self.num_mlp,
+            'qkv_bias':self.qkv_bias, 
+            'qk_scale':self.qk_scale, 
+            'mlp_drop':self.mlp_drop, 
+            'attn_drop':self.attn_drop, 
+            'proj_drop':self.proj_drop, 
+            'drop_path_prob':self.drop_path_prob, 
+            'name':self.prefix
+        })
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
+    
     def build(self, input_shape):
         if self.shift_size > 0:
             H, W = self.num_patch
