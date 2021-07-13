@@ -29,8 +29,6 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, UNET 3+, Attenti
 
 **Note**: the two Transformer models are incompatible with `Numpy 1.20`; `NumPy 1.19.5` is recommended.
 
-**Note**: the Swin-UNET implementation is experimental, and is not compared to the official repository of Hu et al. (2021).
-
 ----------
 
 ` keras_unet_collection.base` contains functions that build the base architecture (i.e., without model heads) of Unet variants for model customization and debugging.
