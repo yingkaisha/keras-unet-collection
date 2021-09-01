@@ -34,8 +34,8 @@ class patch_extract(Layer):
         
     '''
     
-    def __init__(self, patch_size):
-        super(patch_extract, self).__init__()
+    def __init__(self, patch_size, **kwargs):
+        super(patch_extract, self).__init__(**kwargs)
         self.patch_size = patch_size
         self.patch_size_x = patch_size[0]
         self.patch_size_y = patch_size[0]
@@ -91,8 +91,9 @@ class patch_embedding(Layer):
     
     '''
     
-    def __init__(self, num_patch, embed_dim):
-        super(patch_embedding, self).__init__()
+    def __init__(self, num_patch, embed_dim, **kwargs):
+        
+        super(patch_embedding, self).__init__(**kwargs)
         self.num_patch = num_patch
         self.embed_dim = embed_dim
         self.proj = Dense(embed_dim)
@@ -130,8 +131,8 @@ class patch_merging(tf.keras.layers.Layer):
         x: downsampled patches.
     
     '''
-    def __init__(self, num_patch, embed_dim, name=''):
-        super().__init__()
+    def __init__(self, num_patch, embed_dim, name='', **kwargs):
+        super(patch_merging, self).__init__(**kwargs)
         
         self.num_patch = num_patch
         self.embed_dim = embed_dim
@@ -195,8 +196,8 @@ class patch_expanding(tf.keras.layers.Layer):
     For further information see: https://www.tensorflow.org/api_docs/python/tf/nn/depth_to_space
     '''
 
-    def __init__(self, num_patch, embed_dim, upsample_rate, return_vector=True, name='patch_expand'):
-        super().__init__()
+    def __init__(self, num_patch, embed_dim, upsample_rate, return_vector=True, name='patch_expand', **kwargs):
+        super(patch_expanding, self).__init__(**kwargs)
         
         self.num_patch = num_patch
         self.embed_dim = embed_dim
@@ -297,8 +298,8 @@ def drop_path_(inputs, drop_prob, is_training):
     return output
 
 class drop_path(Layer):
-    def __init__(self, drop_prob=None):
-        super().__init__()
+    def __init__(self, drop_prob=None, **kwargs):
+        super(drop_path, self).__init__(**kwargs)
         self.drop_prob = drop_prob
 
     def get_config(self):
@@ -314,9 +315,9 @@ class drop_path(Layer):
         return drop_path_(x, self.drop_prob, training)
 
 class Mlp(tf.keras.layers.Layer):
-    def __init__(self, filter_num, drop=0., name=''):
+    def __init__(self, filter_num, drop=0., name='mlp', **kwargs):
         
-        super().__init__()
+        super(Mlp, self).__init__(**kwargs)
         
         self.filter_num = filter_num
         self.drop = drop
@@ -356,8 +357,9 @@ class Mlp(tf.keras.layers.Layer):
         return x
 
 class WindowAttention(tf.keras.layers.Layer):
-    def __init__(self, dim, window_size, num_heads, qkv_bias=True, qk_scale=None, attn_drop=0, proj_drop=0., name=''):
-        super().__init__()
+    def __init__(self, dim, window_size, num_heads, qkv_bias=True, qk_scale=None, 
+                 attn_drop=0, proj_drop=0., name='swin_atten', **kwargs):
+        super(WindowAttention, self).__init__(**kwargs)
         
         self.dim = dim # number of input dimensions
         self.window_size = window_size # size of the attention window
@@ -475,9 +477,11 @@ class WindowAttention(tf.keras.layers.Layer):
         return x_qkv
 
 class SwinTransformerBlock(tf.keras.layers.Layer):
-    def __init__(self, dim, num_patch, num_heads, window_size=7, shift_size=0, num_mlp=1024,
-                 qkv_bias=True, qk_scale=None, mlp_drop=0, attn_drop=0, proj_drop=0, drop_path_prob=0, name=''):
-        super().__init__()
+    def __init__(self, dim, num_patch, num_heads, window_size=7, shift_size=0, 
+                 num_mlp=1024, qkv_bias=True, qk_scale=None, mlp_drop=0, attn_drop=0, 
+                 proj_drop=0, drop_path_prob=0, name='swin_block', **kwargs):
+        
+        super(SwinTransformerBlock, self).__init__(**kwargs)
         
         self.dim = dim # number of input dimensions
         self.num_patch = num_patch # number of embedded patches; a tuple of  (heigh, width)
