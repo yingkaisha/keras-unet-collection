@@ -4,6 +4,8 @@
 [![PyPI license](https://img.shields.io/pypi/l/keras-unet-collection.svg)](https://pypi.org/project/keras-unet-collection/)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/yingkaisha/keras-unet-collection/graphs/commit-activity)
 
+[![DOI](https://zenodo.org/badge/323426984.svg)](https://zenodo.org/badge/latestdoi/323426984)
+
 The `tensorflow.keras` implementation of U-net, V-net, U-net++, UNET 3+, Attention U-net, R2U-net, ResUnet-a, U^2-Net, TransUNET, and Swin-UNET with optional ImageNet-trained backbones.
 
 ----------
@@ -100,3 +102,19 @@ Yingkai (Kyle) Sha <<yingkai@eoas.ubc.ca>> <<yingkaisha@gmail.com>>
 # License
 
 [MIT License](https://github.com/yingkaisha/keras-unet/blob/main/LICENSE)
+
+# Citation
+
+* Sha, Y., 2021: Keras-unet-collection. GitHub repository, accessed 4 September 2021, https://doi.org/10.5281/zenodo.5449801
+
+```
+@misc{keras-unet-collection,
+  author = {Sha, Yingkai},
+  title = {Keras-unet-collection},
+  year = {2021},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/yingkaisha/keras-unet-collection}},
+  doi = {10.5281/zenodo.5449801}
+}
+```
