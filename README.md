@@ -71,7 +71,9 @@ from keras_unet_collection import models
 
 * **Note**: Neural networks produced by this package may contain customized layers that are not part of the Tensorflow. It is reommended to save and load model weights.
 
-Keras models created by this package may contain customized layers that are not 
+* [Changelog](https://github.com/yingkaisha/keras-unet-collection/blob/main/CHANGELOG.md)
+
+# Examples
 
 * Jupyter notebooks are provided as [examples](https://github.com/yingkaisha/keras-unet-collection/tree/main/examples):
 
@@ -80,8 +82,6 @@ Keras models created by this package may contain customized layers that are not
   * UNET 3+ with deep supervision, classification-guided module, and hybrid loss [[link]](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/segmentation_unet-three-plus_oxford-iiit.ipynb).
 
   * Vision-Transformer-based examples are in progress, and available at [**keras-vision-transformer**](https://github.com/yingkaisha/keras-vision-transformer)
-
-* [Changelog](https://github.com/yingkaisha/keras-unet-collection/blob/main/CHANGELOG.md)
 
 # Dependencies
 
