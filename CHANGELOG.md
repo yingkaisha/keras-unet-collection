@@ -26,3 +26,5 @@
 | 0.1.9    | 2021-06-25    | (1) New feature. Swin-UNET.<br />(2) Update utils and the user guide. |
 | 0.1.10   | 2021-07-13    | Bugfix on model saving issues. |
 | 0.1.11   | 2021-09-01    | Bugfix on transformer layers.  |
+| 0.1.12   | - | * Accidentally skipped this version number |
+| 0.1.13   | 2022-01-10    | Bugfix on `utils.dummpy_loader` |
