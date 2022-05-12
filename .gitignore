@@ -3,8 +3,10 @@
 # author's testing scripts
 *TEST*
 pyproject.toml
-setup.cfg
-setup.py
+setup.cfg 
+# setup.py #<-- need this to install from source 
+#ignore mac file
+.DS_Store 
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
