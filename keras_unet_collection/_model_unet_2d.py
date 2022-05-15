@@ -9,7 +9,7 @@ from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 
 def UNET_left(X, channel, kernel_size=3, stack_num=2, activation='ReLU', 
-              pool=True, batch_norm=False, name='left0'):
+              pool=True, batch_norm=False, kernel_initializer='glorot_uniform', name='left0'):
     '''
     The encoder block of U-net.
     
@@ -27,6 +27,7 @@ def UNET_left(X, channel, kernel_size=3, stack_num=2, activation='ReLU',
               'ave' for AveragePooling2D.
               False for strided conv + batch norm + activation.
         batch_norm: True for batch normalization, False otherwise.
+        kernel_initializer: how initialize weights. 
         name: prefix of the created keras layers.
         
     Output
@@ -37,17 +38,20 @@ def UNET_left(X, channel, kernel_size=3, stack_num=2, activation='ReLU',
     pool_size = 2
     
     X = encode_layer(X, channel, pool_size, pool, activation=activation, 
-                     batch_norm=batch_norm, name='{}_encode'.format(name))
+                     batch_norm=batch_norm, kernel_initializer=kernel_initializer,
+                     name='{}_encode'.format(name))
 
     X = CONV_stack(X, channel, kernel_size, stack_num=stack_num, activation=activation, 
-                   batch_norm=batch_norm, name='{}_conv'.format(name))
+                   batch_norm=batch_norm, kernel_initializer=kernel_initializer, 
+                   name='{}_conv'.format(name))
     
     return X
 
 
 def UNET_right(X, X_list, channel, kernel_size=3, 
                stack_num=2, activation='ReLU',
-               unpool=True, batch_norm=False, concat=True, name='right0'):
+               unpool=True, batch_norm=False, concat=True, kernel_initializer='glorot_uniform',
+               name='right0'):
     
     '''
     The decoder block of U-net.
@@ -65,6 +69,7 @@ def UNET_right(X, X_list, channel, kernel_size=3,
                 False for Conv2DTranspose + batch norm + activation.
         batch_norm: True for batch normalization, False otherwise.
         concat: True for concatenating the corresponded X_list elements.
+        kernel_initializer: how initialize weights.
         name: prefix of the created keras layers.
         
     Output
@@ -76,25 +81,28 @@ def UNET_right(X, X_list, channel, kernel_size=3,
     pool_size = 2
     
     X = decode_layer(X, channel, pool_size, unpool, 
-                     activation=activation, batch_norm=batch_norm, name='{}_decode'.format(name))
+                     activation=activation, batch_norm=batch_norm,kernel_initializer=kernel_initializer,
+                     name='{}_decode'.format(name))
     
     # linear convolutional layers before concatenation
     X = CONV_stack(X, channel, kernel_size, stack_num=1, activation=activation, 
-                   batch_norm=batch_norm, name='{}_conv_before_concat'.format(name))
+                   batch_norm=batch_norm, kernel_initializer=kernel_initializer,
+                   name='{}_conv_before_concat'.format(name))
     if concat:
         # <--- *stacked convolutional can be applied here
         X = concatenate([X,]+X_list, axis=3, name=name+'_concat')
     
     # Stacked convolutions after concatenation 
     X = CONV_stack(X, channel, kernel_size, stack_num=stack_num, activation=activation, 
-                   batch_norm=batch_norm, name=name+'_conv_after_concat')
+                   batch_norm=batch_norm, kernel_initializer=kernel_initializer,
+                   name=name+'_conv_after_concat')
     
     return X
 
 def unet_2d_base(input_tensor, filter_num, kernel_size=3,stack_num_down=2, stack_num_up=2, 
                  activation='ReLU', batch_norm=False, pool=True, unpool=True, 
                  backbone=None, weights='imagenet', freeze_backbone=True, 
-                 freeze_batch_norm=True, name='unet'):
+                 freeze_batch_norm=True, kernel_initializer='glorot_uniform',name='unet'):
     
     '''
     The base of U-net with an optional ImageNet-trained backbone.
@@ -124,6 +132,7 @@ def unet_2d_base(input_tensor, filter_num, kernel_size=3,stack_num_down=2, stack
         unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
                 'nearest' for Upsampling2D with nearest interpolation.
                 False for Conv2DTranspose + batch norm + activation.
+        kernel_initializer: how initialize weights.
         name: prefix of the created keras model and its layers.
         
         ---------- (keywords of backbone options) ----------
@@ -158,13 +167,16 @@ def unet_2d_base(input_tensor, filter_num, kernel_size=3,stack_num_down=2, stack
 
         # stacked conv2d before downsampling
         X = CONV_stack(X, filter_num[0], kernel_size=kernel_size, stack_num=stack_num_down, 
-                        activation=activation, batch_norm=batch_norm, name='{}_down0'.format(name))
+                        activation=activation, batch_norm=batch_norm, kernel_initializer=kernel_initializer,
+                        name='{}_down0'.format(name))
+
         X_skip.append(X)
 
         # downsampling blocks
         for i, f in enumerate(filter_num[1:]):
             X = UNET_left(X, f, kernel_size=kernel_size,stack_num=stack_num_down, 
-                        activation=activation, pool=pool, batch_norm=batch_norm, name='{}_down{}'.format(name, i+1))        
+                        activation=activation, pool=pool, batch_norm=batch_norm,kernel_initializer=kernel_initializer,
+                        name='{}_down{}'.format(name, i+1))        
             X_skip.append(X)
 
     # backbone cases
@@ -197,7 +209,8 @@ def unet_2d_base(input_tensor, filter_num, kernel_size=3,stack_num_down=2, stack
 
                 X = UNET_left(X, filter_num[i_real],kernel_size=kernel_size, stack_num=stack_num_down, 
                                 activation=activation, pool=pool, 
-                                batch_norm=batch_norm, name='{}_down{}'.format(name, i_real+1))
+                                batch_norm=batch_norm, kernel_initializer=kernel_initializer,
+                                name='{}_down{}'.format(name, i_real+1))
                 X_skip.append(X)
 
     # reverse indexing encoded feature maps
@@ -214,7 +227,8 @@ def unet_2d_base(input_tensor, filter_num, kernel_size=3,stack_num_down=2, stack
     # upsampling with concatenation
     for i in range(depth_decode):
         X = UNET_right(X, [X_decode[i],], filter_num_decode[i], kernel_size=kernel_size, stack_num=stack_num_up, 
-                        activation=activation, unpool=unpool, batch_norm=batch_norm, name='{}_up{}'.format(name, i))
+                        activation=activation, unpool=unpool, batch_norm=batch_norm, kernel_initializer=kernel_initializer,
+                        name='{}_up{}'.format(name, i))
 
     # if tensors for concatenation is not enough
     # then use upsampling without concatenation 
@@ -222,12 +236,14 @@ def unet_2d_base(input_tensor, filter_num, kernel_size=3,stack_num_down=2, stack
         for i in range(depth_-depth_decode-1):
             i_real = i + depth_decode
             X = UNET_right(X, None, filter_num_decode[i_real],kernel_size=kernel_size, stack_num=stack_num_up,
-                            activation=activation, unpool=unpool, batch_norm=batch_norm, concat=False, name='{}_up{}'.format(name, i_real))   
+                            activation=activation, unpool=unpool, batch_norm=batch_norm, concat=False, kernel_initializer=kernel_initializer,
+                            name='{}_up{}'.format(name, i_real))   
     return X
 
 def unet_2d(input_size, filter_num, n_labels, kernel_size=3,stack_num_down=2, stack_num_up=2,
             activation='ReLU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, 
-            backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet'):
+            backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, 
+            kernel_initializer='glorot_uniform', name='unet'):
     '''
     U-net with an optional ImageNet-trained backbone.
     
@@ -259,7 +275,8 @@ def unet_2d(input_size, filter_num, n_labels, kernel_size=3,stack_num_down=2, st
               False for strided conv + batch norm + activation.
         unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
                 'nearest' for Upsampling2D with nearest interpolation.
-                False for Conv2DTranspose + batch norm + activation.                 
+                False for Conv2DTranspose + batch norm + activation.
+        kernel_initializer: how initialize weights.                 
         name: prefix of the created keras model and its layers.
         
         ---------- (keywords of backbone options) ----------
@@ -292,10 +309,11 @@ def unet_2d(input_size, filter_num, n_labels, kernel_size=3,stack_num_down=2, st
     X = unet_2d_base(IN, filter_num, kernel_size=kernel_size,stack_num_down=stack_num_down, stack_num_up=stack_num_up, 
                      activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, 
                      backbone=backbone, weights=weights, freeze_backbone=freeze_backbone, 
-                     freeze_batch_norm=freeze_backbone, name=name)
+                     freeze_batch_norm=freeze_backbone, kernel_initializer=kernel_initializer,
+                     name=name)
     
     # output layer
-    OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
+    OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, kernel_initializer=kernel_initializer,name='{}_output'.format(name))
     
     # functional API model
     model = Model(inputs=[IN,], outputs=[OUT,], name='{}_model'.format(name))

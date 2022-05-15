@@ -10,7 +10,8 @@ from tensorflow.keras.layers import BatchNormalization, Activation, concatenate,
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU, Softmax
 
 def decode_layer(X, channel, pool_size, unpool, kernel_size=3, 
-                 activation='ReLU', batch_norm=False, name='decode'):
+                 activation='ReLU', batch_norm=False,kernel_initializer='glorot_uniform',
+                 name='decode'):
     '''
     An overall decode layer, based on either upsampling or trans conv.
     
@@ -63,7 +64,8 @@ def decode_layer(X, channel, pool_size, unpool, kernel_size=3,
             kernel_size = pool_size
             
         X = Conv2DTranspose(channel, kernel_size, strides=(pool_size, pool_size), 
-                            padding='same', name='{}_trans_conv'.format(name))(X)
+                            padding='same', kernel_initializer=kernel_initializer,
+                            name='{}_trans_conv'.format(name))(X)
         
         # batch normalization
         if batch_norm:
@@ -77,7 +79,8 @@ def decode_layer(X, channel, pool_size, unpool, kernel_size=3,
     return X
 
 def encode_layer(X, channel, pool_size, pool, kernel_size='auto', 
-                 activation='ReLU', batch_norm=False, name='encode'):
+                 activation='ReLU', batch_norm=False, kernel_initializer='glorot_uniform',
+                 name='encode'):
     '''
     An overall encode layer, based on one of the:
     (1) max-pooling, (2) average-pooling, (3) strided conv2d.
@@ -128,7 +131,8 @@ def encode_layer(X, channel, pool_size, pool, kernel_size='auto',
         
         # linear convolution with strides
         X = Conv2D(channel, kernel_size, strides=(pool_size, pool_size), 
-                   padding='valid', use_bias=bias_flag, name='{}_stride_conv'.format(name))(X)
+                   padding='valid', use_bias=bias_flag,kernel_initializer=kernel_initializer,
+                   name='{}_stride_conv'.format(name))(X)
         
         # batch normalization
         if batch_norm:
@@ -194,9 +198,8 @@ def attention_gate(X, g, channel,
     
     return X_att
 
-def CONV_stack(X, channel, kernel_size=3, stack_num=2, 
-               dilation_rate=1, activation='ReLU', 
-               batch_norm=False, name='conv_stack'):
+def CONV_stack(X, channel, kernel_size=3, stack_num=2, dilation_rate=1, activation='ReLU',batch_norm=False, 
+                    kernel_initializer='glorot_uniform',name='conv_stack'):
     '''
     Stacked convolutional layers:
     (Convolutional layer --> batch normalization --> Activation)*stack_num
@@ -214,6 +217,7 @@ def CONV_stack(X, channel, kernel_size=3, stack_num=2,
         dilation_rate: optional dilated convolution kernel.
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU.
         batch_norm: True for batch normalization, False otherwise.
+        kernel_initializer: how to initialize kernels. By defualt uses the default Conv. init. 
         name: prefix of the created keras layers.
         
     Output
@@ -231,7 +235,8 @@ def CONV_stack(X, channel, kernel_size=3, stack_num=2,
         
         # linear convolution
         X = Conv2D(channel, kernel_size, padding='same', use_bias=bias_flag, 
-                   dilation_rate=dilation_rate, name='{}_{}'.format(name, i))(X)
+                   dilation_rate=dilation_rate, kernel_initializer=kernel_initializer,
+                   name='{}_{}'.format(name, i))(X)
         
         # batch normalization
         if batch_norm:
@@ -381,7 +386,8 @@ def ASPP_conv(X, channel, activation='ReLU', batch_norm=True, name='aspp'):
     
     return concatenate([b4, b0, b_r6, b_r9, b_r12])
 
-def CONV_output(X, n_labels, kernel_size=1, activation='Softmax', name='conv_output'):
+def CONV_output(X, n_labels, kernel_size=1, activation='Softmax',kernel_initializer='glorot_uniform',
+                    name='conv_output'):
     '''
     Convolutional layer with output activation.
     
@@ -403,7 +409,8 @@ def CONV_output(X, n_labels, kernel_size=1, activation='Softmax', name='conv_out
         
     '''
     
-    X = Conv2D(n_labels, kernel_size, padding='same', use_bias=True, name=name)(X)
+    X = Conv2D(n_labels, kernel_size, padding='same', use_bias=True, kernel_initializer=kernel_initializer,
+                    name=name)(X)
     
     if activation:
         
