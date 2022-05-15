@@ -1,4 +1,1 @@
-tensorflow_gpu>=2.5.0
-numpy==1.19.5
-Pillow==8.3.0
 tensorflow>=2.5.0
