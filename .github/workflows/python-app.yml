@@ -36,4 +36,4 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
     - name: Test with pytest
       run: |
-        pytest ./keras_unet_collection/tests/test_initial.py   
+        pytest ./tests/test_initial.pytests/test_initial.py   
