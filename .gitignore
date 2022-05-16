@@ -1,7 +1,7 @@
 *.png
 
 # author's testing scripts
-*TEST*
+# *TEST*
 pyproject.toml
 setup.cfg 
 # setup.py #<-- need this to install from source 
