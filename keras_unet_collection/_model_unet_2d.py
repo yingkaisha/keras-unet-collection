@@ -8,7 +8,7 @@ from keras_unet_collection._backbone_zoo import backbone_zoo, bach_norm_checker
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 
-def UNET_left(X, channel, kernel_size=3, stack_num=2, activation='ReLU', 
+def UNET_left(X, channel, kernel_size=3, stack_num=2, activation='ReLU', l1=1e-2, l2=1e-2,
               pool=True, batch_norm=False, kernel_initializer='glorot_uniform', name='left0'):
     '''
     The encoder block of U-net.
@@ -23,6 +23,8 @@ def UNET_left(X, channel, kernel_size=3, stack_num=2, activation='ReLU',
         kernel_size: size of 2-d convolution kernels.
         stack_num: number of convolutional layers.
         activation: one of the `tensorflow.keras.layers` interface, e.g., 'ReLU'.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         pool: True or 'max' for MaxPooling2D.
               'ave' for AveragePooling2D.
               False for strided conv + batch norm + activation.
@@ -37,19 +39,18 @@ def UNET_left(X, channel, kernel_size=3, stack_num=2, activation='ReLU',
     '''
     pool_size = 2
     
-    X = encode_layer(X, channel, pool_size, pool, activation=activation, 
+    X = encode_layer(X, channel, pool_size, pool, activation=activation, l1=l1, l2=l2,
                      batch_norm=batch_norm, kernel_initializer=kernel_initializer,
                      name='{}_encode'.format(name))
 
-    X = CONV_stack(X, channel, kernel_size, stack_num=stack_num, activation=activation, 
+    X = CONV_stack(X, channel, kernel_size, stack_num=stack_num, activation=activation, l1=l1, l2=l2,
                    batch_norm=batch_norm, kernel_initializer=kernel_initializer, 
                    name='{}_conv'.format(name))
     
     return X
 
 
-def UNET_right(X, X_list, channel, kernel_size=3, 
-               stack_num=2, activation='ReLU',
+def UNET_right(X, X_list, channel, kernel_size=3, l1=1e-2, l2=1e-2, stack_num=2, activation='ReLU',
                unpool=True, batch_norm=False, concat=True, kernel_initializer='glorot_uniform',
                name='right0'):
     
@@ -62,6 +63,8 @@ def UNET_right(X, X_list, channel, kernel_size=3,
         X_list: a list of other tensors that connected to the input tensor.
         channel: number of convolution filters.
         kernel_size: size of 2-d convolution kernels.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         stack_num: number of convolutional layers.
         activation: one of the `tensorflow.keras.layers` interface, e.g., 'ReLU'.
         unpool: True or 'bilinear' for Upsampling2D with bilinear interpolation.
@@ -80,12 +83,12 @@ def UNET_right(X, X_list, channel, kernel_size=3,
     
     pool_size = 2
     
-    X = decode_layer(X, channel, pool_size, unpool, 
+    X = decode_layer(X, channel, pool_size, unpool, l1=l1, l2=l2,
                      activation=activation, batch_norm=batch_norm,kernel_initializer=kernel_initializer,
                      name='{}_decode'.format(name))
     
     # linear convolutional layers before concatenation
-    X = CONV_stack(X, channel, kernel_size, stack_num=1, activation=activation, 
+    X = CONV_stack(X, channel, kernel_size, stack_num=1, activation=activation, l1=l1, l2=l2,
                    batch_norm=batch_norm, kernel_initializer=kernel_initializer,
                    name='{}_conv_before_concat'.format(name))
     if concat:
@@ -93,14 +96,14 @@ def UNET_right(X, X_list, channel, kernel_size=3,
         X = concatenate([X,]+X_list, axis=3, name=name+'_concat')
     
     # Stacked convolutions after concatenation 
-    X = CONV_stack(X, channel, kernel_size, stack_num=stack_num, activation=activation, 
+    X = CONV_stack(X, channel, kernel_size, stack_num=stack_num, activation=activation, l1=l1, l2=l2,
                    batch_norm=batch_norm, kernel_initializer=kernel_initializer,
                    name=name+'_conv_after_concat')
     
     return X
 
-def unet_2d_base(input_tensor, filter_num, kernel_size=3,stack_num_down=2, stack_num_up=2, 
-                 activation='ReLU', batch_norm=False, pool=True, unpool=True, 
+def unet_2d_base(input_tensor, filter_num, kernel_size=3, stack_num_down=2, stack_num_up=2, 
+                 l1=1e-2, l2=1e-2, activation='ReLU', batch_norm=False, pool=True, unpool=True, 
                  backbone=None, weights='imagenet', freeze_backbone=True, 
                  freeze_batch_norm=True, kernel_initializer='glorot_uniform',name='unet'):
     
@@ -124,6 +127,8 @@ def unet_2d_base(input_tensor, filter_num, kernel_size=3,stack_num_down=2, stack
         kernel_size: number of the size of the convolutional kernel within the convolutions.
         stack_num_down: number of convolutional layers per downsampling level/block. 
         stack_num_up: number of convolutional layers (after concatenation) per upsampling level/block.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
         batch_norm: True for batch normalization.
         pool: True or 'max' for MaxPooling2D.
@@ -166,7 +171,7 @@ def unet_2d_base(input_tensor, filter_num, kernel_size=3,stack_num_down=2, stack
         X = input_tensor
 
         # stacked conv2d before downsampling
-        X = CONV_stack(X, filter_num[0], kernel_size=kernel_size, stack_num=stack_num_down, 
+        X = CONV_stack(X, filter_num[0], kernel_size=kernel_size, stack_num=stack_num_down, l1=l1, l2=l2,
                         activation=activation, batch_norm=batch_norm, kernel_initializer=kernel_initializer,
                         name='{}_down0'.format(name))
 
@@ -174,7 +179,7 @@ def unet_2d_base(input_tensor, filter_num, kernel_size=3,stack_num_down=2, stack
 
         # downsampling blocks
         for i, f in enumerate(filter_num[1:]):
-            X = UNET_left(X, f, kernel_size=kernel_size,stack_num=stack_num_down, 
+            X = UNET_left(X, f, kernel_size=kernel_size,stack_num=stack_num_down, l1=l1, l2=l2,
                         activation=activation, pool=pool, batch_norm=batch_norm,kernel_initializer=kernel_initializer,
                         name='{}_down{}'.format(name, i+1))        
             X_skip.append(X)
@@ -208,7 +213,7 @@ def unet_2d_base(input_tensor, filter_num, kernel_size=3,stack_num_down=2, stack
                 i_real = i + depth_encode
 
                 X = UNET_left(X, filter_num[i_real],kernel_size=kernel_size, stack_num=stack_num_down, 
-                                activation=activation, pool=pool, 
+                                l1=l1, l2=l2, activation=activation, pool=pool, 
                                 batch_norm=batch_norm, kernel_initializer=kernel_initializer,
                                 name='{}_down{}'.format(name, i_real+1))
                 X_skip.append(X)
@@ -228,7 +233,7 @@ def unet_2d_base(input_tensor, filter_num, kernel_size=3,stack_num_down=2, stack
     for i in range(depth_decode):
         X = UNET_right(X, [X_decode[i],], filter_num_decode[i], kernel_size=kernel_size, stack_num=stack_num_up, 
                         activation=activation, unpool=unpool, batch_norm=batch_norm, kernel_initializer=kernel_initializer,
-                        name='{}_up{}'.format(name, i))
+                        l1=l1, l2=l2, name='{}_up{}'.format(name, i))
 
     # if tensors for concatenation is not enough
     # then use upsampling without concatenation 
@@ -236,11 +241,12 @@ def unet_2d_base(input_tensor, filter_num, kernel_size=3,stack_num_down=2, stack
         for i in range(depth_-depth_decode-1):
             i_real = i + depth_decode
             X = UNET_right(X, None, filter_num_decode[i_real],kernel_size=kernel_size, stack_num=stack_num_up,
-                            activation=activation, unpool=unpool, batch_norm=batch_norm, concat=False, kernel_initializer=kernel_initializer,
-                            name='{}_up{}'.format(name, i_real))   
+                            activation=activation, unpool=unpool, batch_norm=batch_norm, 
+                            concat=False, kernel_initializer=kernel_initializer,
+                            l1=l1, l2=l2, name='{}_up{}'.format(name, i_real))   
     return X
 
-def unet_2d(input_size, filter_num, n_labels, kernel_size=3,stack_num_down=2, stack_num_up=2,
+def unet_2d(input_size, filter_num, n_labels, kernel_size=3,stack_num_down=2, stack_num_up=2, l1=1e-2, l2=1e-2,
             activation='ReLU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, 
             backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, 
             kernel_initializer='glorot_uniform', name='unet'):
@@ -265,6 +271,8 @@ def unet_2d(input_size, filter_num, n_labels, kernel_size=3,stack_num_down=2, st
         kernel_size: number of the size of the convolutional kernel within the convolutions.
         stack_num_down: number of convolutional layers per downsampling level/block. 
         stack_num_up: number of convolutional layers (after concatenation) per upsampling level/block.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
         output_activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interface or 'Sigmoid'.
                            Default option is 'Softmax'.
@@ -307,13 +315,14 @@ def unet_2d(input_size, filter_num, n_labels, kernel_size=3,stack_num_down=2, st
     
     # base    
     X = unet_2d_base(IN, filter_num, kernel_size=kernel_size,stack_num_down=stack_num_down, stack_num_up=stack_num_up, 
-                     activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, 
+                     activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, l1=l1, l2=l2,
                      backbone=backbone, weights=weights, freeze_backbone=freeze_backbone, 
                      freeze_batch_norm=freeze_backbone, kernel_initializer=kernel_initializer,
                      name=name)
     
     # output layer
-    OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, kernel_initializer=kernel_initializer,name='{}_output'.format(name))
+    OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, 
+                        l1=l1, l2=l2, kernel_initializer=kernel_initializer,name='{}_output'.format(name))
     
     # functional API model
     model = Model(inputs=[IN,], outputs=[OUT,], name='{}_model'.format(name))

@@ -8,8 +8,9 @@ from tensorflow.keras.layers import MaxPooling2D, AveragePooling2D, UpSampling2D
 from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Lambda
 from tensorflow.keras.layers import BatchNormalization, Activation, concatenate, multiply, add
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU, Softmax
+from tensorflow.keras import regularizers
 
-def decode_layer(X, channel, pool_size, unpool, kernel_size=3, 
+def decode_layer(X, channel, pool_size, unpool, kernel_size=3, l1=1e-2, l2=1e-2,
                  activation='ReLU', batch_norm=False,kernel_initializer='glorot_uniform',
                  name='decode'):
     '''
@@ -28,6 +29,8 @@ def decode_layer(X, channel, pool_size, unpool, kernel_size=3,
                 False for Conv2DTranspose + batch norm + activation.           
         kernel_size: size of convolution kernels. 
                      If kernel_size='auto', then it equals to the `pool_size`.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU.
         batch_norm: True for batch normalization, False otherwise.
         name: prefix of the created keras layers.
@@ -64,6 +67,7 @@ def decode_layer(X, channel, pool_size, unpool, kernel_size=3,
             kernel_size = pool_size
             
         X = Conv2DTranspose(channel, kernel_size, strides=(pool_size, pool_size), 
+                            kernel_regularizer=regularizers.L1L2(l1=l1, l2=l2),
                             padding='same', kernel_initializer=kernel_initializer,
                             name='{}_trans_conv'.format(name))(X)
         
@@ -78,7 +82,7 @@ def decode_layer(X, channel, pool_size, unpool, kernel_size=3,
         
     return X
 
-def encode_layer(X, channel, pool_size, pool, kernel_size='auto', 
+def encode_layer(X, channel, pool_size, pool, kernel_size='auto', l1=1e-2, l2=1e-2,
                  activation='ReLU', batch_norm=False, kernel_initializer='glorot_uniform',
                  name='encode'):
     '''
@@ -98,6 +102,8 @@ def encode_layer(X, channel, pool_size, pool, kernel_size='auto',
               False for strided conv + batch norm + activation.
         kernel_size: size of convolution kernels. 
                      If kernel_size='auto', then it equals to the `pool_size`.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU.
         batch_norm: True for batch normalization, False otherwise.
         name: prefix of the created keras layers.
@@ -131,6 +137,7 @@ def encode_layer(X, channel, pool_size, pool, kernel_size='auto',
         
         # linear convolution with strides
         X = Conv2D(channel, kernel_size, strides=(pool_size, pool_size), 
+                   kernel_regularizer=regularizers.L1L2(l1=l1, l2=l2),
                    padding='valid', use_bias=bias_flag,kernel_initializer=kernel_initializer,
                    name='{}_stride_conv'.format(name))(X)
         
@@ -145,7 +152,7 @@ def encode_layer(X, channel, pool_size, pool, kernel_size='auto',
             
     return X
 
-def attention_gate(X, g, channel,  
+def attention_gate(X, g, channel, l1=1e-2, l2=1e-2,
                    activation='ReLU', 
                    attention='add', name='att'):
     '''
@@ -160,6 +167,8 @@ def attention_gate(X, g, channel,
         channel: number of intermediate channel.
                  Oktay et al. (2018) did not specify (denoted as F_int).
                  intermediate channel is expected to be smaller than the input channel.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         activation: a nonlinear attnetion activation.
                     The `sigma_1` in Oktay et al. 2018. Default is 'ReLU'.
         attention: 'add' for additive attention; 'multiply' for multiplicative attention.
@@ -175,10 +184,10 @@ def attention_gate(X, g, channel,
     attention_func = eval(attention)
     
     # mapping the input tensor to the intermediate channel
-    theta_att = Conv2D(channel, 1, use_bias=True, name='{}_theta_x'.format(name))(X)
+    theta_att = Conv2D(channel, 1, kernel_regularizer=regularizers.L1L2(l1=l1, l2=l2), use_bias=True, name='{}_theta_x'.format(name))(X)
     
     # mapping the gate tensor
-    phi_g = Conv2D(channel, 1, use_bias=True, name='{}_phi_g'.format(name))(g)
+    phi_g = Conv2D(channel, 1, kernel_regularizer=regularizers.L1L2(l1=l1, l2=l2), use_bias=True, name='{}_phi_g'.format(name))(g)
     
     # ----- attention learning ----- #
     query = attention_func([theta_att, phi_g], name='{}_add'.format(name))
@@ -187,7 +196,7 @@ def attention_gate(X, g, channel,
     f = activation_func(name='{}_activation'.format(name))(query)
     
     # linear transformation
-    psi_f = Conv2D(1, 1, use_bias=True, name='{}_psi_f'.format(name))(f)
+    psi_f = Conv2D(1, 1, kernel_regularizer=regularizers.L1L2(l1=l1, l2=l2), use_bias=True, name='{}_psi_f'.format(name))(f)
     # ------------------------------ #
     
     # sigmoid activation as attention coefficients
@@ -198,7 +207,7 @@ def attention_gate(X, g, channel,
     
     return X_att
 
-def CONV_stack(X, channel, kernel_size=3, stack_num=2, dilation_rate=1, activation='ReLU',batch_norm=False, 
+def CONV_stack(X, channel, kernel_size=3, stack_num=2, dilation_rate=1, l1=1e-2, l2=1e-2, activation='ReLU',batch_norm=False, 
                     kernel_initializer='glorot_uniform',name='conv_stack'):
     '''
     Stacked convolutional layers:
@@ -215,6 +224,8 @@ def CONV_stack(X, channel, kernel_size=3, stack_num=2, dilation_rate=1, activati
         kernel_size: size of 2-d convolution kernels.
         stack_num: number of stacked Conv2D-BN-Activation layers.
         dilation_rate: optional dilated convolution kernel.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU.
         batch_norm: True for batch normalization, False otherwise.
         kernel_initializer: how to initialize kernels. By defualt uses the default Conv. init. 
@@ -235,6 +246,7 @@ def CONV_stack(X, channel, kernel_size=3, stack_num=2, dilation_rate=1, activati
         
         # linear convolution
         X = Conv2D(channel, kernel_size, padding='same', use_bias=bias_flag, 
+                   kernel_regularizer=regularizers.L1L2(l1=l1, l2=l2), 
                    dilation_rate=dilation_rate, kernel_initializer=kernel_initializer,
                    name='{}_{}'.format(name, i))(X)
         
@@ -248,7 +260,7 @@ def CONV_stack(X, channel, kernel_size=3, stack_num=2, dilation_rate=1, activati
         
     return X
 
-def Res_CONV_stack(X, X_skip, channel, res_num, activation='ReLU', batch_norm=False, name='res_conv'):
+def Res_CONV_stack(X, X_skip, channel, res_num, l1=1e-2, l2=1e-2, activation='ReLU', batch_norm=False, name='res_conv'):
     '''
     Stacked convolutional layers with residual path.
      
@@ -261,6 +273,8 @@ def Res_CONV_stack(X, X_skip, channel, res_num, activation='ReLU', batch_norm=Fa
                 can be a copy of X (e.g., the identity block of ResNet).
         channel: number of convolution filters.
         res_num: number of convolutional layers within the residual path.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         activation: one of the `tensorflow.keras.layers` interface, e.g., 'ReLU'.
         batch_norm: True for batch normalization, False otherwise.
         name: prefix of the created keras layers.
@@ -270,7 +284,7 @@ def Res_CONV_stack(X, X_skip, channel, res_num, activation='ReLU', batch_norm=Fa
         X: output tensor.
         
     '''  
-    X = CONV_stack(X, channel, kernel_size=3, stack_num=res_num, dilation_rate=1, 
+    X = CONV_stack(X, channel, kernel_size=3, stack_num=res_num, dilation_rate=1, l1=l1, l2=l2,
                    activation=activation, batch_norm=batch_norm, name=name)
 
     X = add([X_skip, X], name='{}_add'.format(name))
@@ -280,7 +294,7 @@ def Res_CONV_stack(X, X_skip, channel, res_num, activation='ReLU', batch_norm=Fa
     
     return X
 
-def Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, dilation_rate=1, activation='ReLU', batch_norm=False, name='sep_conv'):
+def Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, l1=1e-2, l2=1e-2, dilation_rate=1, activation='ReLU', batch_norm=False, name='sep_conv'):
     '''
     Depthwise separable convolution with (optional) dilated convolution kernel and batch normalization.
     
@@ -292,6 +306,8 @@ def Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, dilation_rate=1, acti
         channel: number of convolution filters.
         kernel_size: size of 2-d convolution kernels.
         stack_num: number of stacked depthwise-pointwise layers.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         dilation_rate: optional dilated convolution kernel.
         activation: one of the `tensorflow.keras.layers` interface, e.g., 'ReLU'.
         batch_norm: True for batch normalization, False otherwise.
@@ -307,7 +323,8 @@ def Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, dilation_rate=1, acti
     bias_flag = not batch_norm
     
     for i in range(stack_num):
-        X = DepthwiseConv2D(kernel_size, dilation_rate=dilation_rate, padding='same', 
+        X = DepthwiseConv2D(kernel_size, dilation_rate=dilation_rate, padding='same',
+                            kernel_regularizer=regularizers.L1L2(l1=l1, l2=l2),
                             use_bias=bias_flag, name='{}_{}_depthwise'.format(name, i))(X)
         
         if batch_norm:
@@ -315,7 +332,8 @@ def Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, dilation_rate=1, acti
 
         X = activation_func(name='{}_{}_depthwise_activation'.format(name, i))(X)
 
-        X = Conv2D(channel, (1, 1), padding='same', use_bias=bias_flag, name='{}_{}_pointwise'.format(name, i))(X)
+        X = Conv2D(channel, (1, 1), kernel_regularizer=regularizers.L1L2(l1=l1, l2=l2), 
+                        padding='same', use_bias=bias_flag, name='{}_{}_pointwise'.format(name, i))(X)
         
         if batch_norm:
             X = BatchNormalization(name='{}_{}_pointwise_BN'.format(name, i))(X)
@@ -324,7 +342,7 @@ def Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, dilation_rate=1, acti
     
     return X
 
-def ASPP_conv(X, channel, activation='ReLU', batch_norm=True, name='aspp'):
+def ASPP_conv(X, channel, l1=1e-2, l2=1e-2, activation='ReLU', batch_norm=True, name='aspp'):
     '''
     Atrous Spatial Pyramid Pooling (ASPP).
     
@@ -339,6 +357,8 @@ def ASPP_conv(X, channel, activation='ReLU', batch_norm=True, name='aspp'):
     ----------
         X: input tensor.
         channel: number of convolution filters.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         activation: one of the `tensorflow.keras.layers` interface, e.g., ReLU.
         batch_norm: True for batch normalization, False otherwise.
         name: prefix of the created keras layers.
@@ -358,7 +378,8 @@ def ASPP_conv(X, channel, activation='ReLU', batch_norm=True, name='aspp'):
     
     b4 = expand_dims(expand_dims(b4, 1), 1, name='{}_expdim_b4'.format(name))
     
-    b4 = Conv2D(channel, 1, padding='same', use_bias=bias_flag, name='{}_conv_b4'.format(name))(b4)
+    b4 = Conv2D(channel, 1, kernel_regularizer=regularizers.L1L2(l1=l1, l2=l2), 
+                        padding='same', use_bias=bias_flag, name='{}_conv_b4'.format(name))(b4)
     
     if batch_norm:
         b4 = BatchNormalization(name='{}_conv_b4_BN'.format(name))(b4)
@@ -369,7 +390,8 @@ def ASPP_conv(X, channel, activation='ReLU', batch_norm=True, name='aspp'):
     b4 = Lambda(lambda X: image.resize(X, shape_before[1:3], method='bilinear', align_corners=True), 
                 name='{}_resize_b4'.format(name))(b4)
     
-    b0 = Conv2D(channel, (1, 1), padding='same', use_bias=bias_flag, name='{}_conv_b0'.format(name))(X)
+    b0 = Conv2D(channel, (1, 1), kernel_regularizer=regularizers.L1L2(l1=l1, l2=l2),
+                        padding='same', use_bias=bias_flag, name='{}_conv_b0'.format(name))(X)
 
     if batch_norm:
         b0 = BatchNormalization(name='{}_conv_b0_BN'.format(name))(b0)
@@ -377,16 +399,16 @@ def ASPP_conv(X, channel, activation='ReLU', batch_norm=True, name='aspp'):
     b0 = activation_func(name='{}_conv_b0_activation'.format(name))(b0)
     
     # dilation rates are fixed to `[6, 9, 12]`.
-    b_r6 = Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, activation='ReLU', 
+    b_r6 = Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, activation='ReLU', l1=l1, l2=l2,
                         dilation_rate=6, batch_norm=True, name='{}_sepconv_r6'.format(name))
-    b_r9 = Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, activation='ReLU', 
+    b_r9 = Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, activation='ReLU', l1=l1, l2=l2,
                         dilation_rate=9, batch_norm=True, name='{}_sepconv_r9'.format(name))
-    b_r12 = Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, activation='ReLU', 
+    b_r12 = Sep_CONV_stack(X, channel, kernel_size=3, stack_num=1, activation='ReLU', l1=l1, l2=l2,
                         dilation_rate=12, batch_norm=True, name='{}_sepconv_r12'.format(name))
     
     return concatenate([b4, b0, b_r6, b_r9, b_r12])
 
-def CONV_output(X, n_labels, kernel_size=1, activation='Softmax',kernel_initializer='glorot_uniform',
+def CONV_output(X, n_labels, kernel_size=1, l1=1e-2, l2=1e-2, activation='Softmax',kernel_initializer='glorot_uniform',
                     name='conv_output'):
     '''
     Convolutional layer with output activation.
@@ -398,6 +420,8 @@ def CONV_output(X, n_labels, kernel_size=1, activation='Softmax',kernel_initiali
         X: input tensor.
         n_labels: number of classification label(s).
         kernel_size: size of 2-d convolution kernels. Default is 1-by-1.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interface or 'Sigmoid'.
                     Default option is 'Softmax'.
                     if None is received, then linear activation is applied.
@@ -410,7 +434,7 @@ def CONV_output(X, n_labels, kernel_size=1, activation='Softmax',kernel_initiali
     '''
     
     X = Conv2D(n_labels, kernel_size, padding='same', use_bias=True, kernel_initializer=kernel_initializer,
-                    name=name)(X)
+                    kernel_regularizer=regularizers.L1L2(l1=l1, l2=l2), name=name)(X)
     
     if activation:
         
