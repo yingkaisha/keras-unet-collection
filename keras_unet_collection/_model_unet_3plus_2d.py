@@ -9,7 +9,9 @@ from keras_unet_collection._model_unet_2d import UNET_left, UNET_right
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 
-def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_num_aggregate, 
+import warnings
+
+def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_num_aggregate, kernel_size=3, l1=1e-2, l2=1e-2,
                        stack_num_down=2, stack_num_up=1, activation='ReLU', batch_norm=False, pool=True, unpool=True, 
                        backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet3plus'):
     '''
@@ -37,6 +39,9 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
                          * Huang et al. (2020) applied the same numbers for all levels. 
                            e.g., `[64, 64, 64, 64]`.
         filter_num_aggregate: an int that defines the number of channels of full-scale aggregations.
+        kernel_size: number of the size of the convolutional kernel within the convolutions.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         stack_num_down: number of convolutional layers per downsampling level/block. 
         stack_num_up: number of convolutional layers (after full-scale concat) per upsampling level/block.          
         activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., ReLU                
@@ -86,7 +91,7 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
         X = input_tensor
 
         # stacked conv2d before downsampling
-        X = CONV_stack(X, filter_num_down[0], kernel_size=3, stack_num=stack_num_down, 
+        X = CONV_stack(X, filter_num_down[0], kernel_size=kernel_size, stack_num=stack_num_down, l1=l1, l2=l2,
                        activation=activation, batch_norm=batch_norm, name='{}_down0'.format(name))
         X_encoder.append(X)
 
@@ -94,8 +99,8 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
         for i, f in enumerate(filter_num_down[1:]):
 
             # UNET-like downsampling
-            X = UNET_left(X, f, kernel_size=3, stack_num=stack_num_down, activation=activation, 
-                          pool=pool, batch_norm=batch_norm, name='{}_down{}'.format(name, i+1))
+            X = UNET_left(X, f, kernel_size=kernel_size, stack_num=stack_num_down, activation=activation, 
+                          l1=l1, l2=l2, pool=pool, batch_norm=batch_norm, name='{}_down{}'.format(name, i+1))
             X_encoder.append(X)
 
     else:
@@ -126,7 +131,7 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
                 i_real = i + depth_encode
 
                 X = UNET_left(X, filter_num_down[i_real], stack_num=stack_num_down, activation=activation, pool=pool, 
-                              batch_norm=batch_norm, name='{}_down{}'.format(name, i_real+1))
+                              l1=l1, l2=l2, batch_norm=batch_norm, name='{}_down{}'.format(name, i_real+1))
                 X_encoder.append(X)
 
 
@@ -156,7 +161,7 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
             if pool_scale < 0:
                 pool_size = 2**(-1*pool_scale)
                 
-                X = decode_layer(X_decoder[lev], f, pool_size, unpool, 
+                X = decode_layer(X_decoder[lev], f, pool_size, unpool, l1=l1, l2=l2,
                      activation=activation, batch_norm=batch_norm, name='{}_up_{}_en{}'.format(name, i, lev))
 
             # unet skip connection (identity mapping)    
@@ -168,11 +173,11 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
             else:
                 pool_size = 2**(pool_scale)
                 
-                X = encode_layer(X_encoder[lev], f, pool_size, pool, activation=activation, 
+                X = encode_layer(X_encoder[lev], f, pool_size, pool, activation=activation, l1=l1, l2=l2,
                                  batch_norm=batch_norm, name='{}_down_{}_en{}'.format(name, i, lev))
 
             # a conv layer after feature map scale change
-            X = CONV_stack(X, f, kernel_size=3, stack_num=1, 
+            X = CONV_stack(X, f, kernel_size=kernel_size, stack_num=1, l1=l1, l2=l2,
                            activation=activation, batch_norm=batch_norm, name='{}_down_from{}_to{}'.format(name, i, lev))
 
             X_fscale.append(X)  
@@ -181,7 +186,7 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
         # stacked conv layers after concat. BatchNormalization is fixed to True
 
         X = concatenate(X_fscale, axis=-1, name='{}_concat_{}'.format(name, i))
-        X = CONV_stack(X, filter_num_aggregate, kernel_size=3, stack_num=stack_num_up, 
+        X = CONV_stack(X, filter_num_aggregate, kernel_size=kernel_size, stack_num=stack_num_up, l1=l1, l2=l2,
                        activation=activation, batch_norm=True, name='{}_fusion_conv_{}'.format(name, i))
         X_decoder.append(X)
 
@@ -190,16 +195,16 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
     if depth_decode < depth_-1:
         for i in range(depth_-depth_decode-1):
             i_real = i + depth_decode
-            X = UNET_right(X, None, filter_num_aggregate, stack_num=stack_num_up, activation=activation, 
+            X = UNET_right(X, None, filter_num_aggregate, stack_num=stack_num_up, activation=activation, l1=l1, l2=l2,
                            unpool=unpool, batch_norm=batch_norm, concat=False, name='{}_plain_up{}'.format(name, i_real))
             X_decoder.append(X)
         
     # return decoder outputs
     return X_decoder
 
-def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto', filter_num_aggregate='auto', 
-                  stack_num_down=2, stack_num_up=1, activation='ReLU', output_activation='Sigmoid',
-                  batch_norm=False, pool=True, unpool=True, deep_supervision=False, 
+def unet_3plus_2d(input_size, n_labels, filter_num_down, kernel_size=3, filter_num_skip='auto', filter_num_aggregate='auto', 
+                  l1=1e-2, l2=1e-2, stack_num_down=2, stack_num_up=1, activation='ReLU', output_activation='Sigmoid',
+                  batch_norm=False, pool=True, unpool=True, deep_supervision=False,
                   backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet3plus'):
     
     '''
@@ -228,6 +233,9 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
                          * Huang et al. (2020) applied the same numbers for all levels. 
                            e.g., `[64, 64, 64, 64]`.
         filter_num_aggregate: an int that defines the number of channels of full-scale aggregations.
+        kernel_size: number of the size of the convolutional kernel within the convolutions.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         stack_num_down: number of convolutional layers per downsampling level/block. 
         stack_num_up: number of convolutional layers (after full-scale concat) per upsampling level/block.
         activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'
@@ -297,9 +305,9 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
 
     IN = Input(input_size)
 
-    X_decoder = unet_3plus_2d_base(IN, filter_num_down, filter_num_skip, filter_num_aggregate, 
+    X_decoder = unet_3plus_2d_base(IN, filter_num_down, filter_num_skip, filter_num_aggregate, kernel_size=kernel_size,
                                    stack_num_down=stack_num_down, stack_num_up=stack_num_up, activation=activation, 
-                                   batch_norm=batch_norm, pool=pool, unpool=unpool, 
+                                   batch_norm=batch_norm, pool=pool, unpool=unpool, l1=l1, l2=l2,
                                    backbone=backbone, weights=weights, freeze_backbone=freeze_backbone, 
                                    freeze_batch_norm=freeze_batch_norm, name=name)
     X_decoder = X_decoder[::-1]
@@ -324,9 +332,10 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
             
             pool_size = 2**(i)
             
-            X = Conv2D(n_labels, 3, padding='same', name='{}_output_conv_{}'.format(name, i-1))(X_decoder[i])
+            X = Conv2D(n_labels, kernel_size, l1=l1, l2=l2, padding='same', 
+                            name='{}_output_conv_{}'.format(name, i-1))(X_decoder[i])
             
-            X = decode_layer(X, n_labels, pool_size, unpool, 
+            X = decode_layer(X, n_labels, pool_size, unpool, l1=l1, l2=l2,
                              activation=None, batch_norm=False, name='{}_output_sup{}'.format(name, i-1))
             
             if output_activation:
@@ -345,7 +354,7 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
                     
             OUT_stack.append(X)
         
-        X = CONV_output(X_decoder[0], n_labels, kernel_size=3, 
+        X = CONV_output(X_decoder[0], n_labels, kernel_size=3, l1=l1, l2=l2,
                         activation=output_activation, name='{}_output_final'.format(name))
         OUT_stack.append(X)
         
@@ -357,7 +366,7 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, filter_num_skip='auto',
         model = Model([IN,], OUT_stack)
 
     else:
-        OUT = CONV_output(X_decoder[0], n_labels, kernel_size=3, 
+        OUT = CONV_output(X_decoder[0], n_labels, kernel_size=3, l1=l1, l2=l2,
                           activation=output_activation, name='{}_output_final'.format(name))
 
         model = Model([IN,], [OUT,])

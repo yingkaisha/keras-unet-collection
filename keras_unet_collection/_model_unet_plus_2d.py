@@ -11,7 +11,7 @@ from tensorflow.keras.models import Model
 
 import warnings
 
-def unet_plus_2d_base(input_tensor, filter_num, kernel_size=3, stack_num_down=2, stack_num_up=2,
+def unet_plus_2d_base(input_tensor, filter_num, kernel_size=3, stack_num_down=2, stack_num_up=2, l1=1e-2,l2=1e-2,
                       activation='ReLU', batch_norm=False, pool=True, unpool=True, deep_supervision=False, 
                       backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='xnet'):
     '''
@@ -35,6 +35,8 @@ def unet_plus_2d_base(input_tensor, filter_num, kernel_size=3, stack_num_down=2,
         kernel_size: number of the size of the convolutional kernel within the convolutions.
         stack_num_down: number of convolutional layers per downsampling level/block. 
         stack_num_up: number of convolutional layers (after concatenation) per upsampling level/block.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
         batch_norm: True for batch normalization.
         pool: True or 'max' for MaxPooling2D.
@@ -82,11 +84,11 @@ def unet_plus_2d_base(input_tensor, filter_num, kernel_size=3, stack_num_down=2,
         X = input_tensor
 
         # downsampling blocks (same as in 'unet_2d')
-        X = CONV_stack(X, filter_num[0], kernel_size=kernel_size, stack_num=stack_num_down, 
+        X = CONV_stack(X, filter_num[0], kernel_size=kernel_size, stack_num=stack_num_down, l1=l1, l2=l2,
                         activation=activation, batch_norm=batch_norm, name='{}_down0'.format(name))
         X_nest_skip[0].append(X)
         for i, f in enumerate(filter_num[1:]):
-            X = UNET_left(X, f, kernel_size=kernel_size, stack_num=stack_num_down, 
+            X = UNET_left(X, f, kernel_size=kernel_size, stack_num=stack_num_down, l1=l1, l2=l2,
                         activation=activation, pool=pool, batch_norm=batch_norm, name='{}_down{}'.format(name, i+1))        
             X_nest_skip[0].append(X)
 
@@ -117,7 +119,7 @@ def unet_plus_2d_base(input_tensor, filter_num, kernel_size=3, stack_num_down=2,
             for i in range(depth_-depth_encode):
                 i_real = i + depth_encode
 
-                X = UNET_left(X, filter_num[i_real], kernel_size=kernel_size, stack_num=stack_num_down, 
+                X = UNET_left(X, filter_num[i_real], kernel_size=kernel_size, stack_num=stack_num_down, l1=l1, l2=l2,
                                 activation=activation, pool=pool, batch_norm=batch_norm, name='{}_down{}'.format(name, i_real+1))
                 X_nest_skip[0].append(X)
 
@@ -142,7 +144,7 @@ def unet_plus_2d_base(input_tensor, filter_num, kernel_size=3, stack_num_down=2,
 
             # upsamping block that concatenates all available (same feature map size) down-/upsampling outputs
             X_nest_skip[nest_lev].append(
-                UNET_right(X_nest_skip[nest_lev-1][i], previous_skip, filter_num[i-1], 
+                UNET_right(X_nest_skip[nest_lev-1][i], previous_skip, filter_num[i-1], l1=l1, l2=l2,
                            kernel_size=kernel_size, stack_num=stack_num_up, activation=activation, unpool=unpool, 
                            batch_norm=batch_norm, concat=False, name='{}_up{}_from{}'.format(name, nest_lev-1, i-1)))
 
@@ -152,7 +154,7 @@ def unet_plus_2d_base(input_tensor, filter_num, kernel_size=3, stack_num_down=2,
 
             for j in range(depth_lev-depth_decode+1):
                 j_real = j + depth_decode
-                X = UNET_right(X, None, filter_num[j_real-1], 
+                X = UNET_right(X, None, filter_num[j_real-1], l1=l1, l2=l2,
                                kernel_size=kernel_size, stack_num=stack_num_up, activation=activation, unpool=unpool, 
                                batch_norm=batch_norm, concat=False, name='{}_up{}_from{}'.format(name, nest_lev-1, j_real-1))
                 X_nest_skip[nest_lev].append(X)
@@ -170,7 +172,7 @@ def unet_plus_2d_base(input_tensor, filter_num, kernel_size=3, stack_num_down=2,
     else:
         return X_nest_skip[-1][0]
 
-def unet_plus_2d(input_size, filter_num, n_labels, kernel_size=3, stack_num_down=2, stack_num_up=2,
+def unet_plus_2d(input_size, filter_num, n_labels, kernel_size=3, stack_num_down=2, stack_num_up=2, l1=1e-2, l2=1e-2,
                  activation='ReLU', output_activation='Softmax', batch_norm=False, pool=True, unpool=True, deep_supervision=False, 
                  backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='xnet'):
     '''
@@ -195,6 +197,8 @@ def unet_plus_2d(input_size, filter_num, n_labels, kernel_size=3, stack_num_down
         kernel_size: number of the size of the convolutional kernel within the convolutions.
         stack_num_down: number of convolutional layers per downsampling level/block. 
         stack_num_up: number of convolutional layers (after concatenation) per upsampling level/block.
+        l1: the l1 regularization penalty used in kernel regularization
+        l2: the l2 regularization penalty used in kernel regularization
         activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interfaces, e.g., 'ReLU'.
         output_activation: one of the `tensorflow.keras.layers` or `keras_unet_collection.activations` interface or 'Sigmoid'.
                            Default option is 'Softmax'.
@@ -236,7 +240,7 @@ def unet_plus_2d(input_size, filter_num, n_labels, kernel_size=3, stack_num_down
     
     IN = Input(input_size)
     # base
-    X = unet_plus_2d_base(IN, filter_num, kernel_size=kernel_size, stack_num_down=stack_num_down, stack_num_up=stack_num_up,
+    X = unet_plus_2d_base(IN, filter_num, kernel_size=kernel_size, stack_num_down=stack_num_down, stack_num_up=stack_num_up, l1=l1, l2=l2, 
                           activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, deep_supervision=deep_supervision, 
                           backbone=backbone, weights=weights, freeze_backbone=freeze_backbone, freeze_batch_norm=freeze_batch_norm, name=name)
     
@@ -264,7 +268,7 @@ def unet_plus_2d(input_size, filter_num, n_labels, kernel_size=3, stack_num_down
                     print('\t{}_output_sup{}_activation'.format(name, i))
                     
                 OUT_list.append(CONV_output(X_list[i], n_labels, kernel_size=1, activation=output_activation, 
-                                            name='{}_output_sup{}'.format(name, i)))
+                                            l1=l1, l2=l2, name='{}_output_sup{}'.format(name, i)))
         # other backbones        
         else:
             for i in range(1, depth_-1):
@@ -274,10 +278,10 @@ def unet_plus_2d(input_size, filter_num, n_labels, kernel_size=3, stack_num_down
                     print('\t{}_output_sup{}_activation'.format(name, i-1))
                 
                 # an extra upsampling for creating full resolution feature maps
-                X = decode_layer(X_list[i], filter_num[i], 2, unpool, activation=activation, 
+                X = decode_layer(X_list[i], filter_num[i], 2, unpool, activation=activation, l1=l1, l2=l2,
                                  batch_norm=batch_norm, name='{}_sup{}_up'.format(name, i-1))
                 
-                X = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output_sup{}'.format(name, i-1))
+                X = CONV_output(X, n_labels, kernel_size=1, l1=l1, l2=l2, activation=output_activation, name='{}_output_sup{}'.format(name, i-1))
                 OUT_list.append(X)
                 
         if output_activation is None:
@@ -285,10 +289,10 @@ def unet_plus_2d(input_size, filter_num, n_labels, kernel_size=3, stack_num_down
         else:
             print('\t{}_output_final_activation'.format(name))
             
-        OUT_list.append(CONV_output(X_list[-1], n_labels, kernel_size=1, activation=output_activation, name='{}_output_final'.format(name)))
+        OUT_list.append(CONV_output(X_list[-1], n_labels, kernel_size=1, l1=l1, l2=l2, activation=output_activation, name='{}_output_final'.format(name)))
         
     else:
-        OUT = CONV_output(X, n_labels, kernel_size=1, activation=output_activation, name='{}_output'.format(name))
+        OUT = CONV_output(X, n_labels, kernel_size=1, l1=l1, l2=l2, activation=output_activation, name='{}_output'.format(name))
         OUT_list = [OUT,]
         
     # model
