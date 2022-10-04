@@ -10,6 +10,7 @@ from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 
 import warnings
+import numpy as np 
 
 def unet_plus_2d_base(input_tensor, filter_num, kernel_size=3, stack_num_down=2, stack_num_up=2, l1=1e-2,l2=1e-2,
                       activation='ReLU', batch_norm=False, pool=True, unpool=True, deep_supervision=False, 
@@ -237,8 +238,18 @@ def unet_plus_2d(input_size, filter_num, n_labels, kernel_size=3, stack_num_down
     
     if backbone is not None:
         bach_norm_checker(backbone, batch_norm)
+
+    #check input size for power of 2
+    if (np.log2(input_size[0]).is_integer()) and (np.log2(input_size[1]).is_integer()):
+        pass
+    else:
+        print('WARNING: At least one of your input shapes are not a power of two.')
+        print('This might make things weird with maxpooling and concatenating the skip connections.')
+        print('Best to make your data to have power of 2s [e.g., 32, 64, 128, 256, 512]')
+        print('Your given input shape: ', input_size)
     
     IN = Input(input_size)
+    
     # base
     X = unet_plus_2d_base(IN, filter_num, kernel_size=kernel_size, stack_num_down=stack_num_down, stack_num_up=stack_num_up, l1=l1, l2=l2, 
                           activation=activation, batch_norm=batch_norm, pool=pool, unpool=unpool, deep_supervision=deep_supervision, 
