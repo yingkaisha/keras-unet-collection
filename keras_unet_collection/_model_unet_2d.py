@@ -8,6 +8,8 @@ from keras_unet_collection._backbone_zoo import backbone_zoo, bach_norm_checker
 from tensorflow.keras.layers import Input
 from tensorflow.keras.models import Model
 
+import numpy as np 
+
 def UNET_left(X, channel, kernel_size=3, stack_num=2, activation='ReLU', l1=1e-2, l2=1e-2,
               pool=True, batch_norm=False, kernel_initializer='glorot_uniform', name='left0'):
     '''
@@ -311,6 +313,15 @@ def unet_2d(input_size, filter_num, n_labels, kernel_size=3,stack_num_down=2, st
     if backbone is not None:
         bach_norm_checker(backbone, batch_norm)
         
+    #check input size for power of 2
+    if (np.log2(input_size[0]).is_integer()) and (np.log2(input_size[1]).is_integer()):
+        pass
+    else:
+        print('WARNING: At least one of your input shapes are not a power of two.')
+        print('This might make things weird with maxpooling and concatenating the skip connections.')
+        print('Best to make your data to have power of 2s [e.g., 32, 64, 128, 256, 512]')
+        print('Your given input shape: ', input_size)
+
     IN = Input(input_size)
     
     # base    

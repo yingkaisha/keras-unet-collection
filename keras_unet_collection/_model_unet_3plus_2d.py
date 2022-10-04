@@ -11,6 +11,8 @@ from tensorflow.keras.models import Model
 
 import warnings
 
+import numpy as np
+
 def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_num_aggregate, kernel_size=3, l1=1e-2, l2=1e-2,
                        stack_num_down=2, stack_num_up=1, activation='ReLU', batch_norm=False, pool=True, unpool=True, 
                        backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet3plus'):
@@ -202,7 +204,7 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
     # return decoder outputs
     return X_decoder
 
-def unet_3plus_2d(input_size, n_labels, filter_num_down, kernel_size=3, filter_num_skip='auto', filter_num_aggregate='auto', 
+def unet_3plus_2d(input_size, filter_num_down, n_labels, kernel_size=3, filter_num_skip='auto', filter_num_aggregate='auto', 
                   l1=1e-2, l2=1e-2, stack_num_down=2, stack_num_up=1, activation='ReLU', output_activation='Sigmoid',
                   batch_norm=False, pool=True, unpool=True, deep_supervision=False,
                   backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet3plus'):
@@ -280,6 +282,20 @@ def unet_3plus_2d(input_size, n_labels, filter_num_down, kernel_size=3, filter_n
     '''
 
     depth_ = len(filter_num_down)
+
+    #check minimum depth:
+    if depth_ < 3:
+        print('WARNING: in order to setup all skip connections, a UNET3+ must have a minimum')
+        print('depth of 3. You gave a depth of: {}. To change this, change the len of your filter_num_down list.'.format(depth_))
+
+    #check input size for power of 2
+    if (np.log2(input_size[0]).is_integer()) and (np.log2(input_size[1]).is_integer()):
+        pass
+    else:
+        print('WARNING: At least one of your input shapes are not a power of two.')
+        print('This might make things weird with maxpooling and concatenating the skip connections.')
+        print('Best to make your data to have power of 2s [e.g., 32, 64, 128, 256, 512]')
+        print('Your given input shape: ', input_size)
     
     verbose = False
     
