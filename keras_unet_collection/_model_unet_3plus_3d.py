@@ -1,21 +1,30 @@
+""" EXPERIMENTAL: YOUR MILAGE MAY VARY!
+This was a copy of the _model_unet_3plus_2d.py, but adapted to include 3d convolutions.
+
+Note that you can use this method to predict 3d maps, but often was the case in my work that I wanted a 2d map at the end
+
+Adapted by Randy J. Chase 
+
+"""
 
 from __future__ import absolute_import
 
-from keras_unet_collection.layer_utils import *
+from keras_unet_collection.layer_utils_3d import *
 from keras_unet_collection.activations import GELU, Snake
 from keras_unet_collection._backbone_zoo import backbone_zoo, bach_norm_checker
-from keras_unet_collection._model_unet_2d import UNET_left, UNET_right
+from keras_unet_collection._model_unet_3d import UNET_left, UNET_right
 
-from tensorflow.keras.layers import Input
+from tensorflow.keras.layers import Input,Reshape
 from tensorflow.keras.models import Model
 
 import warnings
 
 import numpy as np
 
-def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_num_aggregate, kernel_size=3, l1=1e-2, l2=1e-2,
+def unet_3plus_3d_base(input_tensor, filter_num_down, filter_num_skip, filter_num_aggregate, kernel_size=3, l1=1e-2, l2=1e-2,
                        stack_num_down=2, stack_num_up=1, activation='ReLU', batch_norm=False, pool=True, unpool=True, 
-                       backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet3plus'):
+                       backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet3plus',
+                       pool_size=(2,2,2)):
     '''
     The base of UNET 3+ with an optional ImagNet-trained backbone.
     
@@ -102,7 +111,8 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
 
             # UNET-like downsampling
             X = UNET_left(X, f, kernel_size=kernel_size, stack_num=stack_num_down, activation=activation, 
-                          l1=l1, l2=l2, pool=pool, batch_norm=batch_norm, name='{}_down{}'.format(name, i+1))
+                          l1=l1, l2=l2, pool=pool, batch_norm=batch_norm, name='{}_down{}'.format(name, i+1),
+                          pool_size=pool_size)
             X_encoder.append(X)
 
     else:
@@ -133,7 +143,8 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
                 i_real = i + depth_encode
 
                 X = UNET_left(X, filter_num_down[i_real], stack_num=stack_num_down, activation=activation, pool=pool, 
-                              l1=l1, l2=l2, batch_norm=batch_norm, name='{}_down{}'.format(name, i_real+1))
+                              l1=l1, l2=l2, batch_norm=batch_norm, name='{}_down{}'.format(name, i_real+1),
+                              pool_size=pool_size)
                 X_encoder.append(X)
 
 
@@ -162,8 +173,8 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
             # deeper tensors are obtained from **decoder** outputs
             if pool_scale < 0:
                 pool_size = 2**(-1*pool_scale)
-                print(pool_size,pool_scale)
-                
+                pool_size = (pool_size,pool_size,pool_size)
+
                 X = decode_layer(X_decoder[lev], f, pool_size, unpool, l1=l1, l2=l2,
                      activation=activation, batch_norm=batch_norm, name='{}_up_{}_en{}'.format(name, i, lev))
 
@@ -175,7 +186,8 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
             # shallower tensors are obtained from **encoder** outputs
             else:
                 pool_size = 2**(pool_scale)
-                
+                pool_size = (pool_size,pool_size,pool_size)
+
                 X = encode_layer(X_encoder[lev], f, pool_size, pool, activation=activation, l1=l1, l2=l2,
                                  batch_norm=batch_norm, name='{}_down_{}_en{}'.format(name, i, lev))
 
@@ -199,16 +211,18 @@ def unet_3plus_2d_base(input_tensor, filter_num_down, filter_num_skip, filter_nu
         for i in range(depth_-depth_decode-1):
             i_real = i + depth_decode
             X = UNET_right(X, None, filter_num_aggregate, stack_num=stack_num_up, activation=activation, l1=l1, l2=l2,
-                           unpool=unpool, batch_norm=batch_norm, concat=False, name='{}_plain_up{}'.format(name, i_real))
+                           unpool=unpool, batch_norm=batch_norm, concat=False, name='{}_plain_up{}'.format(name, i_real),
+                           pool_size=pool_size)
             X_decoder.append(X)
         
     # return decoder outputs
     return X_decoder
 
-def unet_3plus_2d(input_size, filter_num_down, n_labels, kernel_size=3, filter_num_skip='auto', filter_num_aggregate='auto', 
+def unet_3plus_3d(input_size, filter_num_down, n_labels, kernel_size=3, filter_num_skip='auto', filter_num_aggregate='auto', 
                   l1=1e-2, l2=1e-2, stack_num_down=2, stack_num_up=1, activation='ReLU', output_activation='Sigmoid',
                   batch_norm=False, pool=True, unpool=True, deep_supervision=False,
-                  backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet3plus'):
+                  backbone=None, weights='imagenet', freeze_backbone=True, freeze_batch_norm=True, name='unet3plus',
+                  collapse=True,pool_size=(2,2,2)):
     
     '''
     UNET 3+ with an optional ImageNet-trained backbone.
@@ -322,11 +336,11 @@ def unet_3plus_2d(input_size, filter_num_down, n_labels, kernel_size=3, filter_n
 
     IN = Input(input_size)
 
-    X_decoder = unet_3plus_2d_base(IN, filter_num_down, filter_num_skip, filter_num_aggregate, kernel_size=kernel_size,
+    X_decoder = unet_3plus_3d_base(IN, filter_num_down, filter_num_skip, filter_num_aggregate, kernel_size=kernel_size,
                                    stack_num_down=stack_num_down, stack_num_up=stack_num_up, activation=activation, 
                                    batch_norm=batch_norm, pool=pool, unpool=unpool, l1=l1, l2=l2,
                                    backbone=backbone, weights=weights, freeze_backbone=freeze_backbone, 
-                                   freeze_batch_norm=freeze_batch_norm, name=name)
+                                   freeze_batch_norm=freeze_batch_norm, name=name,pool_size=(2,2,2))
     X_decoder = X_decoder[::-1]
     
     if deep_supervision:
@@ -383,8 +397,18 @@ def unet_3plus_2d(input_size, filter_num_down, n_labels, kernel_size=3, filter_n
         model = Model([IN,], OUT_stack)
 
     else:
-        OUT = CONV_output(X_decoder[0], n_labels, kernel_size=3, l1=l1, l2=l2,
+        X = X_decoder[0]
+        if collapse:
+            
+            #use valid padding to collapse third dim down and keep same number of filters 
+            X = Conv3D(X.type_spec.shape[-1],kernel_size=(1, 1,input_size[2]),activation=activation,padding='valid',name='ConvolveAndCollapse')(X)
+
+        OUT = CONV_output(X, n_labels, kernel_size=3, l1=l1, l2=l2,
                           activation=output_activation, name='{}_output_final'.format(name))
+
+        if collapse:
+            #get rid of 3rd dim where it is just a 1, orig shape should be [none,nx,ny,1,n_labels]
+            OUT = Reshape([X.type_spec.shape[1],X.type_spec.shape[2],n_labels],name='squeeze')(OUT)
 
         model = Model([IN,], [OUT,])
         
