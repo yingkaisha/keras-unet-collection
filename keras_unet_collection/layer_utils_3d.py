@@ -70,7 +70,7 @@ def decode_layer(X, channel, pool_size, unpool, kernel_size=3, l1=1e-2, l2=1e-2,
         if kernel_size == 'auto':
             kernel_size = pool_size
             #probably doesnt work here... RJC 10/4/22
-        X = Conv2DTranspose(channel, kernel_size, strides=(pool_size, pool_size, pool_size), 
+        X = Conv3DTranspose(channel, kernel_size, strides=(pool_size, pool_size, pool_size), 
                             kernel_regularizer=regularizers.L1L2(l1=l1, l2=l2),
                             padding='same', kernel_initializer=kernel_initializer,
                             name='{}_trans_conv'.format(name))(X)
@@ -139,8 +139,8 @@ def encode_layer(X, channel, pool_size, pool, kernel_size='auto', l1=1e-2, l2=1e
         if kernel_size == 'auto':
             kernel_size = pool_size
         
-        # linear convolution with strides !Probably doesnt work RJC 10/4/22
-        X = Conv2D(channel, kernel_size, strides=(pool_size, pool_size,pool_size), 
+        # linear convolution with strides ! Probably doesnt work RJC 10/4/22
+        X = Conv3D(channel, kernel_size, strides=(pool_size, pool_size,pool_size), 
                    kernel_regularizer=regularizers.L1L2(l1=l1, l2=l2),
                    padding='valid', use_bias=bias_flag,kernel_initializer=kernel_initializer,
                    name='{}_stride_conv'.format(name))(X)
