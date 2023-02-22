@@ -59,9 +59,15 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, UNET 3+, Attenti
 | `triplet_1d`    | Semi-hard triplet loss (experimental) | |
 | `crps2d_tf`     | CRPS loss (experimental)       | |
 
-# Installation and usage
+# Installation
 
-```pip install keras-unet-collection```
+The project is hosted on [PyPI](https://pypi.org/project/keras-unet-collection/) and can thus be installed by:
+
+```
+pip install keras-unet-collection
+```
+
+# Usage
 
 ```python
 from keras_unet_collection import models
