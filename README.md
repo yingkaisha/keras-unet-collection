@@ -87,7 +87,7 @@ from keras_unet_collection import models
   
   * UNET 3+ with deep supervision, classification-guided module, and hybrid loss [[link]](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/segmentation_unet-three-plus_oxford-iiit.ipynb).
 
-  * Vision-Transformer-based examples are in progress, and available at [**keras-vision-transformer**](https://github.com/yingkaisha/keras-vision-transformer)
+  * Vision-Transformer-based examples are in progress, and available at [**keras-vision-transformer**](https://github.com/yingkaisha/keras-vision-transformer).
 
 # Dependencies
 
