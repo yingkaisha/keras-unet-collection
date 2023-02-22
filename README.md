@@ -29,7 +29,7 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, UNET 3+, Attenti
 | `transunet_2d` | TransUNET       | [Chen et al. (2021)](https://arxiv.org/abs/2102.04306) |
 | `swin_unet_2d` | Swin-UNET       | [Hu et al. (2021)](https://arxiv.org/abs/2105.05537) |
 
-**Note**: the two Transformer models are incompatible with `Numpy 1.20`; `NumPy 1.19.5` is recommended.
+**Note**: the two Transformer models are incompatible with `NumPy 1.20`; `NumPy 1.19.5` is recommended.
 
 ----------
 
@@ -91,7 +91,7 @@ from keras_unet_collection import models
 
 # Dependencies
 
-* TensorFlow 2.5.0, Keras 2.5.0, Numpy 1.19.5.
+* TensorFlow 2.5.0, Keras 2.5.0, NumPy 1.19.5.
 
 * (Optional for examples) Pillow, matplotlib, etc.
 
