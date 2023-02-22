@@ -53,7 +53,7 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, UNET 3+, Attenti
 | `dice`          | Dice loss                      | [Sudre et al. (2017)](https://link.springer.com/chapter/10.1007/978-3-319-67558-9_28) |
 | `tversky`       | Tversky loss                   | [Hashemi et al. (2018)](https://ieeexplore.ieee.org/abstract/document/8573779) |
 | `focal_tversky` | Focal Tversky loss             | [Abraham et al. (2019)](https://ieeexplore.ieee.org/abstract/document/8759329) |
-| `ms_ssim`       | Multi-scale Structural Similarity Index loss | [Wang et al. (2003)](https://ieeexplore.ieee.org/abstract/document/1292216) |
+| `ms_ssim`       | Multi-scale Structural Similarity Index Measure loss | [Wang et al. (2003)](https://ieeexplore.ieee.org/abstract/document/1292216) |
 | `iou_seg`       | Intersection over Union (IoU) loss for segmentation | [Rahman and Wang (2016)](https://link.springer.com/chapter/10.1007/978-3-319-50835-1_22) |
 | `iou_box`       | (Generalized) IoU loss for object detection | [Rezatofighi et al. (2019)](https://openaccess.thecvf.com/content_CVPR_2019/html/Rezatofighi_Generalized_Intersection_Over_Union_A_Metric_and_a_Loss_for_CVPR_2019_paper.html) |
 | `triplet_1d`    | Semi-hard triplet loss (experimental) | |
