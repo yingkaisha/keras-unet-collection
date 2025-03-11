@@ -29,7 +29,7 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, UNET 3+, Attenti
 | `transunet_2d` | TransUNET       | [Chen et al. (2021)](https://arxiv.org/abs/2102.04306) |
 | `swin_unet_2d` | Swin-UNET       | [Hu et al. (2021)](https://arxiv.org/abs/2105.05537) |
 
-**Note**: the two Transformer models are incompatible with `Numpy 1.20`; `NumPy 1.19.5` is recommended.
+**Note**: the two Transformer models are incompatible with `NumPy 1.20`; `NumPy 1.19.5` is recommended.
 
 ----------
 
@@ -53,15 +53,21 @@ The `tensorflow.keras` implementation of U-net, V-net, U-net++, UNET 3+, Attenti
 | `dice`          | Dice loss                      | [Sudre et al. (2017)](https://link.springer.com/chapter/10.1007/978-3-319-67558-9_28) |
 | `tversky`       | Tversky loss                   | [Hashemi et al. (2018)](https://ieeexplore.ieee.org/abstract/document/8573779) |
 | `focal_tversky` | Focal Tversky loss             | [Abraham et al. (2019)](https://ieeexplore.ieee.org/abstract/document/8759329) |
-| `ms_ssim`       | Multi-scale Structural Similarity Index loss | [Wang et al. (2003)](https://ieeexplore.ieee.org/abstract/document/1292216) |
+| `ms_ssim`       | Multi-scale Structural Similarity Index Measure loss | [Wang et al. (2003)](https://ieeexplore.ieee.org/abstract/document/1292216) |
 | `iou_seg`       | Intersection over Union (IoU) loss for segmentation | [Rahman and Wang (2016)](https://link.springer.com/chapter/10.1007/978-3-319-50835-1_22) |
 | `iou_box`       | (Generalized) IoU loss for object detection | [Rezatofighi et al. (2019)](https://openaccess.thecvf.com/content_CVPR_2019/html/Rezatofighi_Generalized_Intersection_Over_Union_A_Metric_and_a_Loss_for_CVPR_2019_paper.html) |
 | `triplet_1d`    | Semi-hard triplet loss (experimental) | |
 | `crps2d_tf`     | CRPS loss (experimental)       | |
 
-# Installation and usage
+# Installation
 
-```pip install keras-unet-collection```
+The project is hosted on [PyPI](https://pypi.org/project/keras-unet-collection/) and can thus be installed by:
+
+```
+pip install keras-unet-collection
+```
+
+# Usage
 
 ```python
 from keras_unet_collection import models
@@ -81,11 +87,11 @@ from keras_unet_collection import models
   
   * UNET 3+ with deep supervision, classification-guided module, and hybrid loss [[link]](https://github.com/yingkaisha/keras-unet-collection/blob/main/examples/segmentation_unet-three-plus_oxford-iiit.ipynb).
 
-  * Vision-Transformer-based examples are in progress, and available at [**keras-vision-transformer**](https://github.com/yingkaisha/keras-vision-transformer)
+  * Vision-Transformer-based examples are in progress, and available at [**keras-vision-transformer**](https://github.com/yingkaisha/keras-vision-transformer).
 
 # Dependencies
 
-* TensorFlow 2.5.0, Keras 2.5.0, Numpy 1.19.5.
+* TensorFlow 2.5.0, Keras 2.5.0, NumPy 1.19.5.
 
 * (Optional for examples) Pillow, matplotlib, etc.
 
