@@ -8,6 +8,7 @@ from tensorflow.keras.layers import MaxPooling2D, AveragePooling2D, UpSampling2D
 from tensorflow.keras.layers import Conv2D, DepthwiseConv2D, Lambda
 from tensorflow.keras.layers import BatchNormalization, Activation, concatenate, multiply, add
 from tensorflow.keras.layers import ReLU, LeakyReLU, PReLU, ELU, Softmax
+from tensorflow.keras.layers import Dropout
 
 def decode_layer(X, channel, pool_size, unpool, kernel_size=3, 
                  activation='ReLU', batch_norm=False, name='decode'):
@@ -196,7 +197,7 @@ def attention_gate(X, g, channel,
 
 def CONV_stack(X, channel, kernel_size=3, stack_num=2, 
                dilation_rate=1, activation='ReLU', 
-               batch_norm=False, name='conv_stack'):
+               batch_norm=False, dropout=False, dropout_rate=0.5, name='conv_stack'):
     '''
     Stacked convolutional layers:
     (Convolutional layer --> batch normalization --> Activation)*stack_num
@@ -240,6 +241,11 @@ def CONV_stack(X, channel, kernel_size=3, stack_num=2,
         # activation
         activation_func = eval(activation)
         X = activation_func(name='{}_{}_activation'.format(name, i))(X)
+        
+        #dropout
+        if dropout:
+           X = Dropout(rate=dropout_rate)(X)
+          
         
     return X
 
